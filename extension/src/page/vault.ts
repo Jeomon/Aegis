@@ -24,7 +24,7 @@
  * therefore only ever increases, and a handle is never reissued.
  */
 
-import type { SensitiveKind } from './sensitive'
+import type { SensitiveKind } from '../shared/types'
 
 interface Entry {
   kind: SensitiveKind

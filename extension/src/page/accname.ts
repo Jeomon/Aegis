@@ -7,6 +7,7 @@
  */
 
 import { classifySensitive } from './sensitive'
+import { redactText } from '../shared/detect'
 import { conceal } from './vault'
 
 import { INLINE_ELEMENTS, INTERACTIVE_ROLES, STRONG_INTERACTIVE_TAGS, roleOf } from './roles'
@@ -214,7 +215,14 @@ export function interactiveStates(el: Element): string[] {
     const kind = classifySensitive(el)
     // A handle rather than a bare label, so the agent can direct the value back into a
     // field without ever being shown it.
-    states.push(kind ? `value=${conceal(kind, value)}` : `value="${truncate(value, VALUE_LIMIT)}"`)
+    if (kind) {
+      states.push(`value=${conceal(kind, value)}`)
+    } else {
+      // No declared kind, but the text itself may still be an identifier — an Aadhaar
+      // typed into a plain text box looks like nothing to layer 1.
+      const scanned = redactText(truncate(value, VALUE_LIMIT), conceal)
+      states.push(`value="${scanned.text}"`)
+    }
   }
 
   return states

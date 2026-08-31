@@ -10,8 +10,9 @@
  * reference; and shadow roots are walked directly rather than pierced from injected JS.
  */
 
+import { redactText } from '../shared/detect'
 import { classifySensitive } from './sensitive'
-import { beginScan } from './vault'
+import { beginScan, conceal } from './vault'
 import { accessibleName, displayRole, hasWidgetStateAttributes, interactiveStates, isFocusable } from './accname'
 import {
   EXCLUDED_TAGS,
@@ -386,7 +387,9 @@ export function scanInteractive(): ScanOutput {
       id,
       tag: el.tagName.toLowerCase(),
       role: role || displayRole(el),
-      name,
+      // Layer 2 over the accessible name: a link whose text is an email address, or a
+      // contact row carrying a phone number, is invisible to layer 1's structural rules.
+      name: redactText(name, conceal).text,
       states: interactiveStates(el),
       bounds: boundsOf(rect),
       strong,

@@ -11,21 +11,8 @@
  * element's bounds. One decision, two channels, so the two can never disagree.
  */
 
-export type SensitiveKind =
-  | 'password'
-  | 'one-time-code'
-  | 'cc-number'
-  | 'cc-csc'
-  | 'cc-exp'
-  | 'email'
-  | 'tel'
-  | 'street-address'
-  | 'postal-code'
-  | 'bday'
-  | 'name'
-  | 'aadhaar'
-  | 'pan'
-  | 'account'
+import type { SensitiveKind } from '../shared/types'
+
 
 /**
  * autocomplete values, once stripped of their section and address-type prefixes. The spec

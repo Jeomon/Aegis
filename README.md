@@ -27,9 +27,14 @@ declares sensitive (`type="password"`, `autocomplete="cc-number"`, an Aadhaar la
 filled without being told what with. The classification lives on each element, so the pixel
 channel will mask the same decision rather than a parallel one.
 
-Still unredacted in the text channel: every open tab's title and URL, the page title and
-URL, and accessible names — none of which pass through layer 1, because they are text
-rather than declared fields. That is layer 2's job.
+Layer 2 — regex with checksums — covers the text those rules cannot reach: accessible
+names, field values with no declared kind, the page title and URL, and every open tab's
+title and URL. Aadhaar is validated with Verhoeff, cards with Luhn, GSTIN by the PAN
+embedded in it, so an order number or a timestamp is left alone. Only the matched
+substring is replaced, because the surrounding sentence is the context the server is being
+asked to reason about.
+
+Still unredacted: the screenshot itself, and `evaluate` output.
 
 ---
 

@@ -1,4 +1,25 @@
-import type { SensitiveKind } from '../page/sensitive'
+/**
+ * What a redacted value is. Layer 1 derives these from the DOM, layer 2 from the text
+ * itself, and both feed the same vault — so a value masked in one channel and matched in
+ * the other cannot become two unrelated secrets.
+ */
+export type SensitiveKind =
+  | 'password'
+  | 'one-time-code'
+  | 'cc-number'
+  | 'cc-csc'
+  | 'cc-exp'
+  | 'email'
+  | 'tel'
+  | 'street-address'
+  | 'postal-code'
+  | 'bday'
+  | 'name'
+  | 'aadhaar'
+  | 'pan'
+  | 'gstin'
+  | 'ifsc'
+  | 'account'
 
 export type Role = 'user' | 'assistant'
 

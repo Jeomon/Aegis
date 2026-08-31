@@ -10,6 +10,8 @@ import { ACT_MESSAGE } from './shared/actions'
 import type { ActMessage } from './shared/actions'
 import { executePageAction } from './page/execute'
 import { scanInteractive } from './page/scan'
+import { conceal } from './page/vault'
+import { redactText } from './shared/detect'
 import { buildTree } from './page/tree'
 import type { ScanResult } from './shared/types'
 
@@ -28,8 +30,11 @@ function scan(): ScanResult {
       scrollY: window.scrollY,
       devicePixelRatio: window.devicePixelRatio || 1,
     },
-    url: location.href,
-    title: document.title,
+    // Redacted at source rather than at render time, so an identifier in a URL or a title
+    // never crosses out of the page in the first place. It shares the vault with the
+    // fields, so the same Aadhaar in the title and in an input is one handle, not two.
+    url: redactText(location.href, conceal).text,
+    title: redactText(document.title, conceal).text,
     scanMs: Math.round(performance.now() - started),
     counts,
   }

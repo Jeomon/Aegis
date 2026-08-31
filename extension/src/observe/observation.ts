@@ -8,6 +8,7 @@
  * append it to the transcript.
  */
 
+import { redactText } from '../shared/detect'
 import { renderTree } from '../page/tree'
 import type { TabInfo } from '../agent/browser'
 import type { ScanResult } from '../shared/types'
@@ -39,6 +40,20 @@ export function renderObservation(
   return parts.join('\n\n')
 }
 
+/**
+ * Layer 2 over the page and tab headers.
+ *
+ * These are the panel's own data rather than the page's, so they never reach the vault —
+ * an identifier in a tab title is not something the agent will be asked to type back, and
+ * a handle nobody can expand is just noise. It is dropped instead.
+ *
+ * Worth noting how much this covers: every open tab is listed, so an unrelated Gmail tab
+ * would otherwise contribute its subject line and URL to every single turn.
+ */
+function clean(text: string): string {
+  return redactText(text ?? '').text
+}
+
 function summary(scan: ScanResult, tabs: TabInfo[]): string {
   const lines = ['Browser state:']
 
@@ -46,12 +61,12 @@ function summary(scan: ScanResult, tabs: TabInfo[]): string {
     lines.push('Tabs:')
     for (const tab of tabs) {
       lines.push(
-        `${tab.active ? '*' : ' '} [${tab.tabId}] ${JSON.stringify(tab.title)} ${tab.url}`,
+        `${tab.active ? '*' : ' '} [${tab.tabId}] ${JSON.stringify(clean(tab.title))} ${clean(tab.url)}`,
       )
     }
   }
 
-  lines.push(`Page: ${JSON.stringify(scan.title)} — ${scan.url}`)
+  lines.push(`Page: ${JSON.stringify(clean(scan.title))} — ${clean(scan.url)}`)
 
   const { width, height, scrollX, scrollY } = scan.viewport
   lines.push(`Viewport: ${width}x${height}, scrolled to (${Math.round(scrollX)}, ${Math.round(scrollY)})`)
