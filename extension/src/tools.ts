@@ -126,13 +126,13 @@ export const BROWSER_TOOL = {
   },
 } as const
 
-/** Guidance that belongs in the system prompt alongside the tool. */
+/**
+ * Rules about the tool itself, spliced into the system prompt. How the page is *presented*
+ * varies by observation mode and lives in lib/prompt.ts instead.
+ */
 export const TOOL_GUIDELINES = [
-  'A fresh browser observation is provided every turn — the current page, its tabs, and',
-  'the interactive elements as an indented tree. Do not ask for it; read it.',
-  '',
-  'Interact through the [id] labels from that observation. Ids are stale as soon as the',
-  'page changes, so always use the latest ones.',
+  'Interact through the [id] labels in the observation. Ids are stale as soon as the page',
+  'changes, so always use the latest ones.',
   '',
   'Set isSensitive=true when typing anything secret. Stop and ask the user at login walls',
   'rather than guessing credentials, and confirm before anything destructive or',

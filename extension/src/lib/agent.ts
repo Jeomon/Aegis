@@ -22,8 +22,9 @@ import { annotateScreenshot } from './annotate'
 import { captureScreenshot, executeToolCall, runAction, scanPage } from './browser'
 import type { TabInfo } from './browser'
 import { renderObservation } from './observation'
+import { buildSystemPrompt } from './prompt'
 import { resolveTarget } from './settings'
-import { BROWSER_TOOL, TOOL_GUIDELINES } from '../tools'
+import { BROWSER_TOOL } from '../tools'
 
 /**
  * A runaway guard, not the termination mechanism — the stop reason decides when a turn is
@@ -42,20 +43,6 @@ const CAPACITY = /resourceexhausted|request limit|at capacity|overload|too many 
 const RETRY_DELAYS_MS = [1500, 4000]
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-
-const SYSTEM_PROMPT = [
-  'You are Aegis, an assistant embedded in a browser side panel. You can see the page',
-  'beside you and act on it through the browser tool.',
-  '',
-  TOOL_GUIDELINES,
-  '',
-  'Read an element\'s state before acting on it. A control already showing [pressed],',
-  '[checked] or [selected] is in that state — clicking it again reverses it. If the user',
-  'repeats an instruction you already carried out, say it is already done instead of',
-  'repeating the action.',
-  '',
-  'Answer briefly. When a task is done, say what you did rather than restating the plan.',
-].join('\n')
 
 export interface AgentEvents {
   /** A new step of the loop begins — reset any live bubbles. */
@@ -132,7 +119,7 @@ export async function runAgentTurn(
     // Built fresh every step and never pushed to history — the image is as ephemeral as
     // the text, so a stale screenshot can never be mistaken for the current page.
     const messages: ChatMessage[] = [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: buildSystemPrompt({ observationMode: target.observationMode }) },
       ...history,
       userTurn(observation, image),
     ]
