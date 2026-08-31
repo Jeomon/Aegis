@@ -1,0 +1,22 @@
+{
+  "name": "aegis-extension",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Aegis — assistant side panel for Chrome (SIH26171)",
+  "scripts": {
+    "build": "vite build && vite build --config vite.content.config.ts",
+    "watch": "vite build --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.2.7",
+    "@types/node": "^26.4.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.122.0",
+    "openai": "^7.8.0"
+  }
+}

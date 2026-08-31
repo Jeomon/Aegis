@@ -1,0 +1,12 @@
+# Credentials never belong in the repository. The extension reads keys from
+# chrome.storage.local at runtime, so nothing here is needed to build or run it.
+.env
+.env.*
+!.env.example
+
+# Build output and dependencies are reproducible from source.
+node_modules/
+dist/
+
+*.log
+.DS_Store

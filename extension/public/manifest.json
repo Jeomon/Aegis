@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Aegis",
+  "version": "0.1.0",
+  "description": "An assistant that lives in a side panel and reads the interactive structure of the page beside it.",
+  "minimum_chrome_version": "114",
+  "permissions": ["sidePanel", "tabs", "scripting", "activeTab", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Open Aegis"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ]
+}

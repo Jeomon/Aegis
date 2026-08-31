@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Aegis</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0f1115;
+        --panel: #171a20;
+        --line: #262b33;
+        --text: #e7eaf0;
+        --muted: #8b93a1;
+        --accent: #4c8dff;
+        --good: #3fb950;
+        --warn: #d29922;
+        --danger: #f85149;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg);
+        color: var(--text);
+        font: 13.5px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      }
+
+      header { flex: none; padding: 12px 14px 10px; border-bottom: 1px solid var(--line); }
+      .row { display: flex; align-items: center; gap: 8px; }
+      .brand { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; }
+      .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; }
+      h1 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: 0.2px; }
+      #context {
+        margin-top: 3px; font-size: 11.5px; color: var(--muted);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      #actions { display: flex; gap: 6px; margin-top: 9px; }
+      .chip {
+        height: 26px; padding: 0 10px;
+        border: 1px solid var(--line); border-radius: 6px;
+        background: var(--panel); color: var(--text);
+        font-size: 11.5px; font-weight: 500; cursor: pointer;
+      }
+      .chip:hover:not(:disabled) { border-color: var(--accent); }
+      .gear {
+        width: 32px; height: 32px; flex: none; padding: 0;
+        border: 1px solid var(--line); border-radius: 8px;
+        background: var(--panel); color: var(--text);
+        font-size: 17px; line-height: 1; cursor: pointer;
+      }
+      .gear:hover { border-color: var(--accent); }
+
+      #empty {
+        margin: auto; padding: 0 24px; text-align: center;
+        color: var(--muted); font-size: 12.5px; line-height: 1.6;
+      }
+      #messages {
+        flex: 1; overflow-y: auto; padding: 14px;
+        display: flex; flex-direction: column; gap: 10px;
+      }
+      .msg { display: flex; }
+      .msg.user { justify-content: flex-end; }
+      .bubble {
+        max-width: 86%; padding: 8px 11px; border-radius: 12px;
+        white-space: pre-wrap; overflow-wrap: anywhere;
+      }
+      .msg.assistant .bubble {
+        background: var(--panel); border: 1px solid var(--line); border-bottom-left-radius: 4px;
+      }
+      /* A bubble that rendered to nothing should not occupy the transcript. paint() sets
+         [hidden] for whitespace-only content, which :empty cannot match. */
+      .bubble:empty { display: none; }
+      .msg[hidden] { display: none; }
+      .bubble.mono {
+        max-width: 100%; font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+        white-space: pre; overflow-x: auto; overflow-wrap: normal;
+      }
+      .msg.user .bubble {
+        background: var(--accent); color: #fff; border-bottom-right-radius: 4px;
+      }
+
+      /* The reasoning trace: present but visibly secondary to the answer. */
+      .bubble.dim {
+        background: transparent;
+        border: 1px dashed var(--line);
+        color: var(--muted);
+        font-size: 12px;
+        font-style: italic;
+      }
+
+      /* ------------------------------------------------------------ tool cards */
+      /* An action the agent took is an event, not an utterance — so it reads as a
+         compact record rather than a chat bubble. */
+      .tool {
+        align-self: stretch;
+        border: 1px solid var(--line);
+        border-left: 2px solid var(--accent);
+        border-radius: 6px;
+        padding: 7px 10px;
+        background: var(--panel);
+        font-size: 12.5px;
+      }
+      .tool.running { opacity: 0.7; }
+      .tool.failed { border-left-color: var(--danger); }
+      .tool-head { display: flex; align-items: baseline; gap: 6px; }
+      .tool-verb { font-weight: 600; white-space: nowrap; }
+      .tool-detail {
+        flex: 1; min-width: 0; color: var(--muted);
+        font: 11.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+        overflow-wrap: anywhere;
+      }
+      .tool-status { color: var(--good); font-size: 12px; }
+      .tool.failed .tool-status { color: var(--danger); }
+      .tool.running .tool-status { color: var(--muted); }
+      .tool-result {
+        margin-top: 4px; font-size: 11.5px; color: var(--muted); overflow-wrap: anywhere;
+      }
+      .tool-result:empty { display: none; }
+      .tool.failed .tool-result { color: var(--danger); }
+      .tool-raw { margin-top: 6px; }
+      .tool-raw summary {
+        cursor: pointer; font-size: 10.5px; color: var(--muted); list-style: none;
+      }
+      .tool-raw summary::marker { content: ""; }
+      .tool-raw summary::before { content: "\25B8 "; }
+      .tool-raw[open] summary::before { content: "\25BE "; }
+      .tool-raw pre {
+        margin: 4px 0 0; padding: 6px 8px; overflow-x: auto;
+        background: #0b0d11; border: 1px solid var(--line); border-radius: 4px;
+        font: 10.5px ui-monospace, SFMono-Regular, Menlo, monospace; color: #b9c2cf;
+      }
+
+      /* ---------------------------------------------------- markdown in bubbles */
+      .bubble > :first-child { margin-top: 0; }
+      .bubble > :last-child { margin-bottom: 0; }
+      .bubble p { margin: 0 0 8px; }
+      .bubble h1, .bubble h2, .bubble h3,
+      .bubble h4, .bubble h5, .bubble h6 {
+        margin: 12px 0 6px; font-size: 13.5px; font-weight: 600; line-height: 1.35;
+      }
+      .bubble h1 { font-size: 15px; }
+      .bubble h2 { font-size: 14px; }
+      .bubble ul, .bubble ol { margin: 0 0 8px; padding-left: 20px; }
+      .bubble li { margin: 2px 0; }
+      .bubble code {
+        font: 11.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+        background: #0b0d11; border: 1px solid var(--line);
+        border-radius: 4px; padding: 1px 4px;
+      }
+      .bubble pre {
+        margin: 0 0 8px; padding: 8px 10px; overflow-x: auto;
+        background: #0b0d11; border: 1px solid var(--line); border-radius: 6px;
+      }
+      .bubble pre code { background: none; border: 0; padding: 0; }
+      .bubble blockquote {
+        margin: 0 0 8px; padding-left: 10px;
+        border-left: 2px solid var(--line); color: var(--muted);
+      }
+      .bubble hr { border: 0; border-top: 1px solid var(--line); margin: 10px 0; }
+      .bubble a { color: var(--accent); }
+      .msg.user .bubble a { color: #fff; text-decoration: underline; }
+
+      /* ---------------------------------------------------------- settings */
+      #settings { flex: 1; overflow-y: auto; padding: 14px; display: none; }
+      #settings.open { display: block; }
+      body.settings #messages, body.settings #composer { display: none; }
+
+      /* Scoped: an unscoped h2 rule bleeds into markdown headings in the chat. */
+      #settings h2 {
+        margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.6px;
+        text-transform: uppercase; color: var(--muted);
+      }
+      .group { margin-bottom: 20px; }
+      .tabs {
+        display: flex; gap: 2px; margin: -2px 0 16px;
+        border-bottom: 1px solid var(--line);
+      }
+      .tab {
+        flex: 1; padding: 8px 0; background: none; border: 0;
+        border-bottom: 2px solid transparent; margin-bottom: -1px;
+        color: var(--muted); font: inherit; font-size: 12px; font-weight: 600;
+        letter-spacing: 0.3px; cursor: pointer;
+      }
+      .tab:hover { color: var(--text); }
+      .tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+      .tabpanel[hidden] { display: none; }
+      label.field { display: block; margin-bottom: 10px; font-size: 12px; color: var(--muted); }
+      select, input[type="password"], input[type="text"] {
+        width: 100%; margin-top: 4px; padding: 7px 9px;
+        border: 1px solid var(--line); border-radius: 6px;
+        background: var(--panel); color: var(--text); font: inherit; font-size: 12.5px;
+      }
+      select:focus, input:focus { outline: none; border-color: var(--accent); }
+      select:disabled { opacity: 0.5; }
+
+      .provider {
+        border: 1px solid var(--line); border-radius: 8px;
+        padding: 10px; margin-bottom: 8px; background: var(--panel);
+      }
+      .provider .head { display: flex; align-items: baseline; gap: 6px; }
+      .provider .name { font-size: 12.5px; font-weight: 600; flex: 1; }
+      .provider .url {
+        font: 10.5px ui-monospace, Menlo, monospace; color: var(--muted);
+        margin-top: 2px; overflow-wrap: anywhere;
+      }
+      .provider .note { font-size: 11px; color: var(--muted); margin-top: 6px; }
+      .provider .controls { display: flex; gap: 6px; margin-top: 8px; }
+      /* The field and its buttons share one height, so the row reads as a single control.
+         The input's vertical padding is dropped in favour of an explicit height. */
+      .provider .controls input,
+      .provider .controls .chip {
+        height: 30px;
+        margin-top: 0;
+      }
+      .provider .controls input { flex: 1; min-width: 0; padding: 0 9px; }
+      .badge {
+        font-size: 10px; padding: 1px 6px; border-radius: 10px;
+        border: 1px solid var(--line); color: var(--muted); white-space: nowrap;
+      }
+      .badge.set { color: var(--good); border-color: var(--good); }
+      .badge.none { color: var(--warn); border-color: var(--warn); }
+      label.inline {
+        display: flex; align-items: center; gap: 6px;
+        margin: -4px 0 10px; font-size: 11.5px; color: var(--muted);
+      }
+      label.inline input { width: auto; margin: 0; }
+      #modelFilter { margin-bottom: 4px; }
+      .warning {
+        margin: -4px 0 10px; padding: 7px 9px;
+        border: 1px solid var(--warn); border-radius: 6px;
+        background: rgba(210, 153, 34, 0.08);
+        color: var(--warn); font-size: 11px; line-height: 1.5;
+      }
+      .hint { font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+
+      #composer {
+        flex: none; display: flex; gap: 8px; align-items: flex-end;
+        padding: 10px 12px 12px; border-top: 1px solid var(--line);
+      }
+      textarea {
+        flex: 1; resize: none; height: 36px; max-height: 140px; padding: 8px 10px;
+        border: 1px solid var(--line); border-radius: 8px;
+        background: var(--panel); color: var(--text); font: inherit;
+      }
+      textarea:focus { outline: none; border-color: var(--accent); }
+      textarea::placeholder { color: var(--muted); }
+      #send {
+        flex: none; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 8px;
+        background: var(--accent); color: #fff; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+      }
+      /* One control, two jobs: send while idle, stop while the model is working. */
+      #send .icon-stop { display: none; }
+      #send.busy { background: var(--panel); border: 1px solid var(--line); color: var(--text); }
+      #send.busy .icon-send { display: none; }
+      #send.busy .icon-stop { display: block; }
+      #send.busy:disabled { opacity: 1; cursor: pointer; }
+      button:disabled { opacity: 0.4; cursor: default; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="row">
+        <div class="brand">
+          <span class="dot"></span>
+          <h1>Aegis</h1>
+        </div>
+        <button id="scan" class="chip" type="button">Scan page</button>
+        <button id="settingsToggle" class="gear" type="button" title="Settings" aria-label="Settings">⚙</button>
+      </div>
+      <div id="context">Loading…</div>
+    </header>
+
+    <div id="messages">
+      <div id="empty">Ask about this page, or tell me what to do on it.</div>
+    </div>
+
+    <section id="settings">
+      <div class="tabs" role="tablist">
+        <button class="tab" type="button" role="tab" data-tab="model" aria-selected="true">Model</button>
+        <button class="tab" type="button" role="tab" data-tab="observation" aria-selected="false">Vision</button>
+        <button class="tab" type="button" role="tab" data-tab="credentials" aria-selected="false">Keys</button>
+      </div>
+
+      <div class="tabpanel" data-panel="model">
+        <label class="field">
+          Provider
+          <select id="providerSelect"></select>
+        </label>
+        <label class="field">
+          Model
+          <input id="modelFilter" type="text" placeholder="filter models…" autocomplete="off" />
+          <select id="modelSelect" size="1"></select>
+        </label>
+        <div id="modelCount" class="hint" style="margin-top:-6px"></div>
+        <label class="field" style="margin-top:10px">
+          Reasoning
+          <select id="thinkingLevel"></select>
+        </label>
+        <div id="activeStatus" class="hint"></div>
+      </div>
+
+      <div class="tabpanel" data-panel="observation" hidden>
+        <label class="field">
+          What the model sees each turn
+          <select id="observationMode"></select>
+        </label>
+        <div id="pixelWarning" class="warning" hidden></div>
+        <p class="hint">
+          The tree lists every interactive element with a stable <code>[id]</code> and sends
+          no pixels. A screenshot carries the same ids drawn as labelled boxes, so the model
+          can act on what it sees. Both are rebuilt every turn and never kept in history.
+        </p>
+      </div>
+
+      <div class="tabpanel" data-panel="credentials" hidden>
+        <div id="providerList"></div>
+        <p class="hint">
+          Keys are stored in <code>chrome.storage.local</code> for this browser profile
+          only — never in the build, never in the repository. A server would read the same
+          values from environment variables instead.
+        </p>
+      </div>
+    </section>
+
+    <form id="composer">
+      <textarea id="input" rows="1" placeholder="Ask about this page…"></textarea>
+      <button id="send" type="submit" disabled aria-label="Send">
+        <svg class="icon-send" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"
+             aria-hidden="true"><path d="M3.4 20.4 20.85 12.9a1 1 0 0 0 0-1.84L3.4 3.6a.99.99 0 0 0-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91Z"/></svg>
+        <svg class="icon-stop" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"
+             aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+      </button>
+    </form>
+
+    <script type="module" src="./sidepanel.js"></script>
+  </body>
+</html>
