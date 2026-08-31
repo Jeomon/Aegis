@@ -138,9 +138,31 @@ function effectiveOpacity(el: Element): number {
   return value
 }
 
+/**
+ * Can a scroll action targeting this element move anything?
+ *
+ * True when the element itself scrolls, or when it sits inside a nested scroll region —
+ * a chat list, a modal body — that the page scroll cannot reach. The flag therefore means
+ * exactly what the action does, since scrolling walks up to the nearest scrollable
+ * ancestor anyway.
+ *
+ * The walk stops at <body>: the document scroller is reached by an ordinary page scroll,
+ * so flagging every element on a page with a scrolling wrapper would be noise.
+ */
 function isScrollable(el: Element, style: CSSStyleDeclaration): boolean {
-  const overflow = style.overflowY
-  return (overflow === 'auto' || overflow === 'scroll') && el.scrollHeight > el.clientHeight + 1
+  if (scrolls(el, style)) return true
+
+  for (let parent = el.parentElement; parent && parent !== document.body; parent = parent.parentElement) {
+    if (scrolls(parent, getComputedStyle(parent))) return true
+  }
+  return false
+}
+
+function scrolls(el: Element, style: CSSStyleDeclaration): boolean {
+  return (
+    (/^(auto|scroll)$/.test(style.overflowY) && el.scrollHeight > el.clientHeight + 1) ||
+    (/^(auto|scroll)$/.test(style.overflowX) && el.scrollWidth > el.clientWidth + 1)
+  )
 }
 
 /**

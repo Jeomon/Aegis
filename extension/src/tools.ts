@@ -45,8 +45,9 @@ export const BROWSER_TOOL = {
           type: 'integer',
           description:
             'Element id from the current observation — the [123] labels. Required for ' +
-            'click. Ids change when the page changes, so only use ones from the latest ' +
-            'observation.',
+            'click. For scroll, scrolls that element\'s container instead of the page — ' +
+            'use it for anything the tree marks (scrollable). Ids change when the page ' +
+            'changes, so only use ones from the latest observation.',
         },
         text: {
           type: 'string',
@@ -235,6 +236,7 @@ export function validateToolInput(input: unknown): ValidationResult {
           direction: direction as ScrollDirection | undefined,
           amount: int('amount'),
           text: str('text'),
+          elementId: int('elementId'),
         },
       }
     }

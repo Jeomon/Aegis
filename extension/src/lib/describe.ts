@@ -57,7 +57,9 @@ export function describeAction(raw: string): ActionSummary {
       if (action.text) return { verb: 'Scroll to', detail: `“${truncate(String(action.text), 40)}”` }
       return {
         verb: 'Scroll',
-        detail: `${action.direction ?? 'down'}${action.amount ? ` ${action.amount}px` : ''}`,
+        detail:
+          `${action.direction ?? 'down'}${action.amount ? ` ${action.amount}px` : ''}` +
+          (action.elementId === undefined ? '' : ` inside [${action.elementId}]`),
       }
 
     case 'wait':

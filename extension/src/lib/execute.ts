@@ -58,7 +58,7 @@ export async function executePageAction(action: PageAction): Promise<ActionResul
     case 'scroll':
       return action.text !== undefined
         ? scrollToTextAction(action.text)
-        : scrollAction(action.direction ?? 'down', action.amount ?? 600)
+        : scrollAction(action.direction ?? 'down', action.amount ?? 600, action.elementId)
     case 'wait':
       await new Promise((resolve) => setTimeout(resolve, action.seconds * 1000))
       return ok(`Waited ${action.seconds}s.`)
@@ -245,13 +245,62 @@ function selectOption(select: HTMLSelectElement, wanted?: string): ActionResult 
 
 /* ------------------------------------------------------------------ scroll */
 
-function scrollAction(direction: ScrollDirection, amount: number): ActionResult {
-  const before = { x: window.scrollX, y: window.scrollY }
-  window.scrollBy({ ...SCROLL_DELTAS[direction](amount), behavior: 'instant' })
+/**
+ * Scroll the window, or a container when an element is named.
+ *
+ * The tree already flags containers `(scrollable)`, so the model can see them; without a
+ * target here it could only ever scroll the window, and content inside a chat list or a
+ * modal body stayed unreachable however far the page scrolled.
+ */
+function scrollAction(
+  direction: ScrollDirection,
+  amount: number,
+  elementId?: number,
+): ActionResult {
+  const delta = SCROLL_DELTAS[direction](amount)
 
-  const moved = window.scrollX !== before.x || window.scrollY !== before.y
-  if (!moved) return ok(`Already at the ${direction} edge of the page.`)
-  return ok(`Scrolled ${direction} ${amount}px.`)
+  if (elementId === undefined) {
+    const before = { x: window.scrollX, y: window.scrollY }
+    window.scrollBy({ ...delta, behavior: 'instant' })
+
+    const moved = window.scrollX !== before.x || window.scrollY !== before.y
+    if (!moved) return ok(`Already at the ${direction} edge of the page.`)
+    return ok(`Scrolled ${direction} ${amount}px.`)
+  }
+
+  const found = need(elementId)
+  if (isResult(found)) return found
+
+  // The labelled element is often a row inside the scroller rather than the scroller
+  // itself, so the nearest scrollable ancestor is what actually moves.
+  const container = scrollableFrom(found)
+  if (!container) {
+    return fail(
+      `[${elementId}] ${describe(found)} is not inside anything scrollable — scroll the ` +
+        'page instead by omitting elementId.',
+    )
+  }
+
+  const before = { x: container.scrollLeft, y: container.scrollTop }
+  container.scrollBy({ ...delta, behavior: 'instant' })
+
+  if (container.scrollLeft === before.x && container.scrollTop === before.y) {
+    return ok(`[${elementId}] is already at the ${direction} edge of its container.`)
+  }
+  return ok(`Scrolled ${direction} ${amount}px inside [${elementId}]'s container.`)
+}
+
+/** The element itself if it scrolls, else the nearest ancestor that does. */
+function scrollableFrom(start: Element): Element | undefined {
+  for (let el: Element | null = start; el; el = el.parentElement) {
+    const style = getComputedStyle(el)
+    const canScrollY =
+      /^(auto|scroll)$/.test(style.overflowY) && el.scrollHeight > el.clientHeight + 1
+    const canScrollX =
+      /^(auto|scroll)$/.test(style.overflowX) && el.scrollWidth > el.clientWidth + 1
+    if (canScrollY || canScrollX) return el
+  }
+  return undefined
 }
 
 function scrollToTextAction(text: string): ActionResult {

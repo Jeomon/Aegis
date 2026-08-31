@@ -44,6 +44,8 @@ export type PageAction =
       amount?: number
       /** Scroll until this text is on screen, instead of by a fixed amount. */
       text?: string
+      /** Scroll inside this element's scrollable container rather than the window. */
+      elementId?: number
     }
   | { type: 'wait'; seconds: number }
 
