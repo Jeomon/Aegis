@@ -102,13 +102,24 @@ export async function runAgentTurn(
       observation = renderObservation(scan, (tabs.data as TabInfo[]) ?? [], wantsTree)
 
       if (wantsImage) {
-        // Labelled with the same ids the tree uses, so the two views agree on what is
-        // what — without labels the model can see a control but cannot name it.
+        // Redacted and labelled in one pass: sensitive regions painted out, then the same
+        // ids the tree uses drawn on top, so the two views agree on what is what.
         const capture = await captureScreenshot()
-        image = await annotateScreenshot(capture, scan.elements, {
+        const annotated = await annotateScreenshot(capture, scan.elements, {
           devicePixelRatio: scan.viewport.devicePixelRatio,
           viewportWidth: scan.viewport.width,
         })
+        image = annotated.dataUrl
+
+        // Stated in the observation rather than left implicit: a black rectangle is a
+        // deliberate mask, not a rendering failure to be retried or worked around.
+        if (annotated.masked > 0) {
+          observation +=
+            `\n\n${annotated.masked} region${annotated.masked === 1 ? '' : 's'} in the ` +
+            'screenshot are painted out because they hold personal data. That is expected. ' +
+            'Use the [redacted:kind#n] handles from the element states to work with those ' +
+            'values.'
+        }
       }
     } catch (err: unknown) {
       // A browser-internal page has no observation; the model can still answer from history.

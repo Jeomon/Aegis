@@ -283,9 +283,9 @@ function renderMode(providerId: string, modelId: string, mode: ObservationMode):
 
   warningEl.hidden = false
   warningEl.textContent =
-    'Screenshots are sent unredacted. SIH26171 requires visual context to be sanitised on ' +
-    'the device first, and that cascade is not built yet — so this mode is for testing, ' +
-    'not for the demo.'
+    'Fields holding personal data are painted out of the screenshot before it is sent, and ' +
+    'their values stay on this device behind handles. Text rendered into the page itself — ' +
+    'an ID printed in a paragraph, or a face in a photo — is not covered yet.'
 }
 
 function renderCredentials(keys: Map<string, string | undefined>): void {

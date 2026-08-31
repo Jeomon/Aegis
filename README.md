@@ -34,7 +34,15 @@ embedded in it, so an order number or a timestamp is left alone. Only the matche
 substring is replaced, because the surrounding sentence is the context the server is being
 asked to reason about.
 
-Still unredacted: the screenshot itself, and `evaluate` output.
+In the screenshot, fields carrying personal data are painted out — opaque, never blurred,
+since blur is reversible under super-resolution — and dilated by 3px because anti-aliased
+glyph edges bleed outside their measured box. Masks are drawn in the same canvas pass as
+the `[id]` labels and before them, so a label is never covered and the two can never
+disagree about where an element is. The count is reported to the model, so a black
+rectangle reads as a deliberate mask rather than a rendering failure to work around.
+
+Still unredacted: text rendered into the page itself rather than into a field, faces, and
+`evaluate` output.
 
 ---
 

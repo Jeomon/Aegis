@@ -11,6 +11,7 @@
  */
 
 import type { InteractiveElement } from '../shared/types'
+import { maskRegions, sensitiveRegions } from './redact/pixels'
 
 /** Distinct enough to tell adjacent boxes apart, dark enough for white label text. */
 const PALETTE = [
@@ -35,11 +36,17 @@ export interface AnnotateOptions {
  * The capture is in device pixels while element bounds are in CSS pixels, so everything is
  * scaled once here rather than at each draw call.
  */
+export interface AnnotatedCapture {
+  dataUrl: string
+  /** How many regions were painted out. Reported, not assumed. */
+  masked: number
+}
+
 export async function annotateScreenshot(
   captureDataUrl: string,
   elements: readonly InteractiveElement[],
   options: AnnotateOptions,
-): Promise<string> {
+): Promise<AnnotatedCapture> {
   const blob = await (await fetch(captureDataUrl)).blob()
   const bitmap = await createImageBitmap(blob)
 
@@ -60,6 +67,12 @@ export async function annotateScreenshot(
 
   // Element bounds are CSS pixels; the drawn image is the capture scaled to CSS width.
   const factor = options.devicePixelRatio * scale
+
+  // Masks go down before labels, in the same pass and the same coordinate space. Before,
+  // so a label is never painted out by the mask beside it; the same pass, so there is no
+  // second encode and no chance of the two disagreeing about where an element sits.
+  const masked = maskRegions(ctx, sensitiveRegions(elements), factor, width, height)
+
   ctx.font = FONT
   ctx.textBaseline = 'top'
   ctx.lineWidth = 1
@@ -99,7 +112,7 @@ export async function annotateScreenshot(
   }
 
   const out = await canvas.convertToBlob({ type: 'image/png' })
-  return `data:image/png;base64,${toBase64(await out.arrayBuffer())}`
+  return { dataUrl: `data:image/png;base64,${toBase64(await out.arrayBuffer())}`, masked }
 }
 
 /** FileReader is awkward in a worker context; build the base64 directly. */
