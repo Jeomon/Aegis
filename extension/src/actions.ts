@@ -53,6 +53,8 @@ export type TabAction =
   | { type: 'back' }
   | { type: 'forward' }
   | { type: 'tab'; op: TabOp; tabId?: number; url?: string }
+  /** Arbitrary JavaScript, evaluated in the page's own world. */
+  | { type: 'evaluate'; code: string }
 
 export type BrowserAction = PageAction | TabAction
 

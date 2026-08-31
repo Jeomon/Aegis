@@ -76,6 +76,10 @@ export function describeAction(raw: string): ActionSummary {
     case 'forward':
       return { verb: 'Forward', detail: '' }
 
+    // The code itself is the useful detail — the card folds open to the full arguments.
+    case 'evaluate':
+      return { verb: 'Running JavaScript', detail: truncate(String(action.code ?? ''), 44) }
+
     case 'tab': {
       const op = String(action.op ?? '')
       const verb = TAB_VERBS[op] ?? 'Tabs'

@@ -134,7 +134,91 @@ async function runTabAction(action: TabAction): Promise<ActionResult> {
 
     case 'tab':
       return runTabOp(action)
+
+    case 'evaluate':
+      return evaluateInPage(action.code)
   }
+}
+
+/** Anything longer floods the context without telling the model much more. */
+const MAX_RESULT = 2000
+
+/**
+ * Run JavaScript in the page's own world.
+ *
+ * MAIN rather than the content script's isolated world, because the point of evaluate is to
+ * see the page as the page sees it — its globals, its framework state — not the sanitised
+ * view an isolated world gets. The result is serialised inside the page, since a DOM node
+ * cannot cross the boundary that separates the two.
+ *
+ * Note that this reads the live page unfiltered, including values the observation withholds.
+ */
+async function evaluateInPage(code: string): Promise<ActionResult> {
+  const tab = await activeTab()
+
+  let injected
+  try {
+    ;[injected] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id! },
+      world: 'MAIN',
+      args: [code],
+      func: async (source: string) => {
+        const describe = (value: unknown): string => {
+          if (value === undefined) return 'undefined'
+          if (value === null) return 'null'
+          if (typeof value === 'string') return value
+          // A DOM node serialises to '{}', which reads as an empty result rather than a
+          // node, so elements and node lists are rendered as markup instead.
+          if (value instanceof Element) return value.outerHTML
+          if (value instanceof NodeList || value instanceof HTMLCollection) {
+            return Array.from(value as ArrayLike<unknown>)
+              .map((n) => (n instanceof Element ? n.outerHTML : String(n)))
+              .join('\n')
+          }
+          try {
+            return JSON.stringify(value) ?? String(value)
+          } catch {
+            return String(value)
+          }
+        }
+
+        try {
+          // Indirect eval, so the code runs in global scope rather than this closure.
+          let value: unknown = (0, eval)(source)
+          if (value instanceof Promise) value = await value
+          return { ok: true, text: describe(value) }
+        } catch (err: unknown) {
+          return { ok: false, text: err instanceof Error ? err.message : String(err) }
+        }
+      },
+    })
+  } catch (err: unknown) {
+    // A page whose CSP forbids eval rejects the injection itself, which is worth saying
+    // plainly rather than reporting as a script error.
+    const message = err instanceof Error ? err.message : String(err)
+    return { ok: false, message: `Could not evaluate on this page: ${message}` }
+  }
+
+  const outcome = injected?.result as { ok: boolean; text: string } | undefined
+  if (!outcome) return { ok: false, message: 'Evaluate returned nothing.' }
+
+  const text =
+    outcome.text.length > MAX_RESULT
+      ? `${outcome.text.slice(0, MAX_RESULT)}\n… truncated at ${MAX_RESULT} characters.`
+      : outcome.text
+
+  if (outcome.ok) return { ok: true, message: text || '(no value)' }
+
+  if (/Content Security Policy|unsafe-eval/i.test(text)) {
+    return {
+      ok: false,
+      message:
+        "This page's Content Security Policy forbids evaluating JavaScript, so evaluate " +
+        'cannot be used here. Use the observation and the click/type/scroll actions instead.',
+    }
+  }
+
+  return { ok: false, message: `JavaScript error: ${text}` }
 }
 
 async function runTabOp(action: Extract<TabAction, { type: 'tab' }>): Promise<ActionResult> {

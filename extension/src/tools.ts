@@ -13,7 +13,7 @@
 import type { BrowserAction, MouseButton, ScrollDirection, TabOp } from './actions'
 
 export const ACTION_NAMES = [
-  'click', 'type', 'scroll', 'wait', 'goto', 'back', 'forward', 'tab',
+  'click', 'type', 'scroll', 'wait', 'goto', 'back', 'forward', 'tab', 'evaluate',
 ] as const
 
 export type ActionName = (typeof ACTION_NAMES)[number]
@@ -25,7 +25,8 @@ export const BROWSER_TOOL = {
     description:
       'Drive the browser through one action-based tool. Interact with the page using ' +
       'the [id] labels from the current observation (click, type, scroll), move between ' +
-      'pages with goto/back/forward, and manage tabs with tab.',
+      'pages with goto/back/forward, manage tabs with tab, and read anything the ' +
+      'observation does not carry with evaluate.',
     parameters: {
       type: 'object',
       additionalProperties: false,
@@ -37,7 +38,8 @@ export const BROWSER_TOOL = {
           description:
             'click (press an element), type (enter text, press keys, or choose a ' +
             'dropdown option), scroll (by amount or to text), wait, goto (navigate; ' +
-            'omit url to reload), back, forward, tab (list/switch/close/new).',
+            'omit url to reload), back, forward, tab (list/switch/close/new), ' +
+            'evaluate (run JavaScript in the page).',
         },
         elementId: {
           type: 'integer',
@@ -52,6 +54,14 @@ export const BROWSER_TOOL = {
             'For type: the text to enter, or the visible option text when the target is ' +
             'a dropdown (omit to list its options). For scroll: scroll until this text ' +
             'is on screen instead of scrolling by an amount.',
+        },
+        code: {
+          type: 'string',
+          description:
+            'For evaluate: JavaScript to run in the page. The value of the last ' +
+            'expression is returned, awaited if it is a promise. Use it to read what the ' +
+            'observation does not carry — a field value, a computed style, how many rows ' +
+            'a table has. Prefer click/type for acting, since those are tracked.',
         },
         keys: {
           type: 'string',
@@ -134,6 +144,9 @@ export const TOOL_GUIDELINES = [
   'Interact through the [id] labels in the observation. Use only ids that appear in the',
   'observation you were just given — never guess one. Ids are stale as soon as the page',
   'changes, so always use the latest ones.',
+  '',
+  'Prefer click/type/scroll over evaluate for acting on the page; use evaluate to read',
+  'what the observation does not carry.',
   '',
   'Set isSensitive=true when typing anything secret. Stop and ask the user at login walls',
   'rather than guessing credentials, and confirm before anything destructive or',
@@ -224,6 +237,12 @@ export function validateToolInput(input: unknown): ValidationResult {
           text: str('text'),
         },
       }
+    }
+
+    case 'evaluate': {
+      const code = typeof raw.code === 'string' ? raw.code.trim() : ''
+      if (!code) return { ok: false, error: "'code' is required when action='evaluate'." }
+      return { ok: true, action: { type: 'evaluate', code } }
     }
 
     case 'wait': {
