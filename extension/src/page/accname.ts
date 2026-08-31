@@ -6,6 +6,8 @@
  * usefully, not a spec-complete implementation.
  */
 
+import { classifySensitive } from './sensitive'
+
 import { INLINE_ELEMENTS, INTERACTIVE_ROLES, STRONG_INTERACTIVE_TAGS, roleOf } from './roles'
 
 const NAME_LIMIT = 80
@@ -167,8 +169,9 @@ export function isFocusable(el: Element): boolean {
 /**
  * The interactive states worth surfacing, as short tokens.
  *
- * A password field's value is deliberately never read. Every other control's value is
- * included, and that is exactly the surface the redaction layer has to cover later.
+ * Values pass through layer 1 of the redaction cascade first. A sensitive field reports
+ * that it holds a value and what kind, never the value itself — the agent still needs to
+ * know a field is filled, or it will type into it twice.
  */
 export function interactiveStates(el: Element): string[] {
   const states: string[] = []
@@ -206,7 +209,10 @@ export function interactiveStates(el: Element): string[] {
   if (haspopup && haspopup !== 'false') states.push(`haspopup=${haspopup}`)
 
   const value = currentValue(el)
-  if (value) states.push(`value="${truncate(value, VALUE_LIMIT)}"`)
+  if (value) {
+    const kind = classifySensitive(el)
+    states.push(kind ? `value=[redacted:${kind}]` : `value="${truncate(value, VALUE_LIMIT)}"`)
+  }
 
   return states
 }
@@ -214,7 +220,8 @@ export function interactiveStates(el: Element): string[] {
 function currentValue(el: Element): string {
   if (el instanceof HTMLInputElement) {
     const type = el.type.toLowerCase()
-    if (type === 'password') return '' // never read a secret, even locally
+    // Read, but never returned raw: classifySensitive() marks it and the caller masks it.
+    // Returning '' here would lose the fact that the field is filled at all.
     if (type === 'checkbox' || type === 'radio' || type === 'submit' || type === 'button') return ''
     return squash(el.value)
   }

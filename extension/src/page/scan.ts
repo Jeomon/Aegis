@@ -10,6 +10,7 @@
  * reference; and shadow roots are walked directly rather than pierced from injected JS.
  */
 
+import { classifySensitive } from './sensitive'
 import { accessibleName, displayRole, hasWidgetStateAttributes, interactiveStates, isFocusable } from './accname'
 import {
   EXCLUDED_TAGS,
@@ -387,6 +388,7 @@ export function scanInteractive(): ScanOutput {
       strong,
       scrollable: isScrollable(el, style),
       shadow: el.getRootNode() instanceof ShadowRoot,
+      sensitive: classifySensitive(el),
     } satisfies InteractiveElement
   })
 

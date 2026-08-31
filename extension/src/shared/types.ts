@@ -1,3 +1,5 @@
+import type { SensitiveKind } from '../page/sensitive'
+
 export type Role = 'user' | 'assistant'
 
 export interface Message {
@@ -51,6 +53,12 @@ export interface InteractiveElement {
   scrollable: boolean
   /** Lives inside an open shadow root. */
   shadow: boolean
+  /**
+   * What kind of secret this control holds, from layer 1 of the redaction cascade. The
+   * text channel masks the value; the pixel channel masks `bounds`. Both read this, so the
+   * two views can never disagree about what is hidden.
+   */
+  sensitive?: SensitiveKind
 }
 
 /**

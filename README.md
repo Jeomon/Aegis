@@ -21,9 +21,15 @@ back, and actions are executed against the live tab.
 built, the screenshot observation modes send unredacted pixels, and the settings panel says
 so rather than pretending otherwise.
 
-Note that the text observation is not redacted either, and it carries more than the name
-suggests: every open tab's title and URL, the page title and URL, and every element's
-accessible name. That is the default mode, so it is the larger of the two gaps.
+Layer 1 of the cascade — DOM rules — is implemented for the text channel. A field the page
+declares sensitive (`type="password"`, `autocomplete="cc-number"`, an Aadhaar label) reports
+`value=[redacted:kind]` instead of its contents, so the agent still knows the field is
+filled without being told what with. The classification lives on each element, so the pixel
+channel will mask the same decision rather than a parallel one.
+
+Still unredacted in the text channel: every open tab's title and URL, the page title and
+URL, and accessible names — none of which pass through layer 1, because they are text
+rather than declared fields. That is layer 2's job.
 
 ---
 

@@ -97,6 +97,9 @@ export function formatLine(node: TreeNode): string {
   const flags: string[] = []
   if (element.scrollable) flags.push('scrollable')
   if (element.shadow) flags.push('shadow')
+  // Named so the model sets isSensitive=true when typing here, rather than guessing from
+  // the label.
+  if (element.sensitive) flags.push(`sensitive:${element.sensitive}`)
   const flagText = flags.length ? ` (${flags.join(', ')})` : ''
 
   return `[${element.id}] ${element.role} ${JSON.stringify(element.name)}${states}${flagText}`
