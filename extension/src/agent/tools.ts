@@ -10,7 +10,7 @@
  * providers (Together, OpenRouter, Fireworks) accept for Qwen2.5-VL.
  */
 
-import type { BrowserAction, MouseButton, ScrollDirection, TabOp } from './actions'
+import type { BrowserAction, MouseButton, ScrollDirection, TabOp } from '../shared/actions'
 
 export const ACTION_NAMES = [
   'click', 'type', 'scroll', 'wait', 'goto', 'back', 'forward', 'tab', 'evaluate',

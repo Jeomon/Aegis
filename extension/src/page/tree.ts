@@ -11,7 +11,7 @@
  */
 
 import { parentOf } from './scan'
-import type { InteractiveElement, TreeNode } from '../types'
+import type { InteractiveElement, TreeNode } from '../shared/types'
 
 const MAX_LINES = 150
 

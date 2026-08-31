@@ -8,9 +8,9 @@
  * append it to the transcript.
  */
 
-import { renderTree } from './tree'
-import type { TabInfo } from './browser'
-import type { ScanResult } from '../types'
+import { renderTree } from '../page/tree'
+import type { TabInfo } from '../agent/browser'
+import type { ScanResult } from '../shared/types'
 
 const TREE_HEADING =
   'Interactive elements (role "name" [states]; indented by nesting; act on them by elementId):'

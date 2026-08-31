@@ -19,7 +19,7 @@ import {
   hasSearchIndicator,
   roleOf,
 } from './roles'
-import type { Bounds, InteractiveElement, ScanCounts } from '../types'
+import type { Bounds, InteractiveElement, ScanCounts } from '../shared/types'
 
 /**
  * Stable ids for the lifetime of the page. CDP hands out backendNodeIds; we mint our own,

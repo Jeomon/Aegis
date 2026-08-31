@@ -17,7 +17,7 @@
 import OpenAI from 'openai'
 import { anthropicChat, anthropicChatStream } from './anthropic'
 import { geminiChat, geminiChatStream } from './gemini'
-import type { ProviderConfig } from '../providers'
+import type { ProviderConfig } from './registry'
 
 export type Role = 'system' | 'user' | 'assistant' | 'tool'
 

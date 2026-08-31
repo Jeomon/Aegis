@@ -6,12 +6,12 @@
  * here, so an action can only resolve ids produced by a scan in this same instance.
  */
 
-import { ACT_MESSAGE } from './actions'
-import type { ActMessage } from './actions'
-import { executePageAction } from './lib/execute'
-import { scanInteractive } from './lib/scan'
-import { buildTree } from './lib/tree'
-import type { ScanResult } from './types'
+import { ACT_MESSAGE } from './shared/actions'
+import type { ActMessage } from './shared/actions'
+import { executePageAction } from './page/execute'
+import { scanInteractive } from './page/scan'
+import { buildTree } from './page/tree'
+import type { ScanResult } from './shared/types'
 
 function scan(): ScanResult {
   const started = performance.now()

@@ -9,8 +9,8 @@
  * a parameter precisely so neither side has to care where the other got it.
  */
 
-import { MODELS, PROVIDERS, getProvider, hasVision, thinkingLevelsFor } from '../providers'
-import type { ModelConfig, ProviderConfig } from '../providers'
+import { MODELS, PROVIDERS, getProvider, hasVision, thinkingLevelsFor } from '../providers/registry'
+import type { ModelConfig, ProviderConfig } from '../providers/registry'
 
 const SETTINGS_KEY = 'aegis.settings'
 const CREDENTIAL_PREFIX = 'aegis.credential.'

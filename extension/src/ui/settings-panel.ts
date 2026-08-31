@@ -6,7 +6,7 @@
  * model you cannot reach is a failure you find out about mid-demo, so it is prevented here.
  */
 
-import type { ObservationMode } from './lib/settings'
+import type { ObservationMode } from '../shared/settings'
 import {
   clearCredential,
   getCredential,
@@ -14,7 +14,7 @@ import {
   maskCredential,
   setCredential,
   setSettings,
-} from './lib/settings'
+} from '../shared/settings'
 import {
   MODELS,
   PROVIDERS,
@@ -25,8 +25,8 @@ import {
   hasVision,
   modelsFor,
   thinkingLevelsFor,
-} from './providers'
-import type { ProviderConfig } from './providers'
+} from '../providers/registry'
+import type { ProviderConfig } from '../providers/registry'
 
 const toggleEl = document.querySelector<HTMLButtonElement>('#settingsToggle')!
 const panelEl = document.querySelector<HTMLElement>('#settings')!

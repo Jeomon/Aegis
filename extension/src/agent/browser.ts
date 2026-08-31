@@ -6,10 +6,10 @@
  * session, we hold a tab id and re-inject the content script when it has gone away.
  */
 
-import { ACT_MESSAGE, isPageAction } from '../actions'
-import type { ActionResult, BrowserAction, TabAction } from '../actions'
-import { validateToolInput } from '../tools'
-import type { ScanResult } from '../types'
+import { ACT_MESSAGE, isPageAction } from '../shared/actions'
+import type { ActionResult, BrowserAction, TabAction } from '../shared/actions'
+import { validateToolInput } from './tools'
+import type { ScanResult } from '../shared/types'
 
 const INTERNAL_PAGE = /^(chrome|edge|about|chrome-extension|devtools|view-source):/
 

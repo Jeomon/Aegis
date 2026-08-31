@@ -7,7 +7,7 @@
  * the native setter or React ignores them.
  */
 
-import type { ActionResult, MouseButton, PageAction, ScrollDirection } from '../actions'
+import type { ActionResult, MouseButton, PageAction, ScrollDirection } from '../shared/actions'
 import { resolveElement } from './scan'
 
 const BUTTON_CODES: Record<MouseButton, number> = { left: 0, middle: 1, right: 2 }

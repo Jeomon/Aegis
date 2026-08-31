@@ -10,8 +10,8 @@
  * tools.ts next to the schema they describe.
  */
 
-import type { ObservationMode } from './settings'
-import { TOOL_GUIDELINES } from '../tools'
+import type { ObservationMode } from '../shared/settings'
+import { TOOL_GUIDELINES } from './tools'
 
 export interface PromptContext {
   /** What the model is actually shown this turn, after any downgrade for a blind model. */

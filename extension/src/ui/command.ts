@@ -9,7 +9,7 @@
  * accepted, they just resolve onto `type`, `scroll` and `goto`.
  */
 
-import type { BrowserAction, ScrollDirection } from '../actions'
+import type { BrowserAction, ScrollDirection } from '../shared/actions'
 
 const SCROLL_DIRECTIONS = new Set<string>(['up', 'down', 'left', 'right'])
 

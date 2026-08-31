@@ -16,15 +16,15 @@
  * currently non-compliant and marked as such in the settings UI.
  */
 
-import { ChatError, chatStream, toolTurn, userTurn } from './chat'
-import type { ChatMessage } from './chat'
-import { annotateScreenshot } from './annotate'
+import { ChatError, chatStream, toolTurn, userTurn } from '../providers/chat'
+import type { ChatMessage } from '../providers/chat'
+import { annotateScreenshot } from '../observe/annotate'
 import { captureScreenshot, executeToolCall, runAction, scanPage } from './browser'
 import type { TabInfo } from './browser'
-import { renderObservation } from './observation'
+import { renderObservation } from '../observe/observation'
 import { buildSystemPrompt } from './prompt'
-import { resolveTarget } from './settings'
-import { BROWSER_TOOL } from '../tools'
+import { resolveTarget } from '../shared/settings'
+import { BROWSER_TOOL } from './tools'
 
 /**
  * A runaway guard, not the termination mechanism — the stop reason decides when a turn is

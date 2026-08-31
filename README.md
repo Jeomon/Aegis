@@ -17,9 +17,13 @@ back, and actions are executed against the live tab.
 
 **The on-device redaction cascade is not implemented.** It is specified in
 [`docs/redaction-pipeline.md`](docs/redaction-pipeline.md) and the seam for it exists in
-`agent.ts`, between `captureScreenshot()` and `annotateScreenshot()`. Until it is built, the
-screenshot observation modes send unredacted pixels, and the settings panel says so rather
-than pretending otherwise.
+`agent/agent.ts`, between `captureScreenshot()` and `annotateScreenshot()`. Until it is
+built, the screenshot observation modes send unredacted pixels, and the settings panel says
+so rather than pretending otherwise.
+
+Note that the text observation is not redacted either, and it carries more than the name
+suggests: every open tab's title and URL, the page title and URL, and every element's
+accessible name. That is the default mode, so it is the larger of the two gaps.
 
 ---
 
@@ -66,9 +70,8 @@ discard it.
 | `anthropic` | Anthropic |
 | `gemini` | Google Gemini |
 
-Each dialect is contained in its own module (`lib/chat.ts`, `lib/anthropic.ts`,
-`lib/gemini.ts`) and converts to one internal `ChatResult`, so the agent loop cannot tell
-which provider answered.
+Each dialect is contained in its own module under `providers/` and converts to one
+internal `ChatResult`, so the agent loop cannot tell which provider answered.
 
 > **On model choice for SIH26171.** The problem statement asks for an offline-deployable
 > (open-weights) server model; a hosted copy of it is acceptable during the event. That is
@@ -110,19 +113,48 @@ config
 
 ## Layout
 
+Code is grouped by *where it runs*, because that boundary decides what ships into every
+page you visit. Everything under `page/` and `shared/` is bundled into the content script
+and executes on every site; everything else stays in the side panel. The build enforces
+nothing, but the import graph makes a violation obvious.
+
 ```
 extension/src/
-  lib/scan.ts        walk the DOM, pierce shadow roots, decide what is interactive
-  lib/tree.ts        structural scaffolding around the numbered elements
-  lib/execute.ts     click, type, scroll, wait — in the page
-  lib/browser.ts     navigation and tab actions, plus the tool dispatcher
-  lib/agent.ts       the turn loop
-  lib/chat.ts        OpenAI chat-completions, and the dialect switch
-  lib/anthropic.ts   Anthropic Messages
-  lib/gemini.ts      Gemini generateContent
-  lib/annotate.ts    draw [id] boxes onto a capture
-  lib/markdown.ts    render model output by building DOM nodes, never innerHTML
-  providers.ts       provider registry and capability checks
+  background.ts  content.ts  sidepanel.ts   the three entry points
+
+  page/          bundled into content.js — runs on every site
+    scan.ts        walk the DOM, pierce shadow roots, decide what is interactive
+    accname.ts     accessible names, following the ARIA precedence order
+    roles.ts       implicit ARIA roles by tag
+    tree.ts        structural scaffolding around the numbered elements
+    execute.ts     click, type, scroll, wait — in the page
+
+  observe/       what the model is shown
+    observation.ts text rendering of the page state
+    annotate.ts    draw [id] boxes onto a capture
+
+  agent/
+    agent.ts       the turn loop
+    prompt.ts      the system prompt, assembled per turn
+    tools.ts       the browser tool schema and validation
+    browser.ts     navigation and tab actions, plus the tool dispatcher
+
+  providers/
+    chat.ts        OpenAI chat-completions, and the dialect switch
+    anthropic.ts   Anthropic Messages
+    gemini.ts      Gemini generateContent
+    registry.ts    provider registry and capability checks
+    catalogue.generated.ts   376 models, generated
+
+  ui/
+    settings-panel.ts  the settings tabs
+    markdown.ts        render model output by building DOM nodes, never innerHTML
+    describe.ts        tool activity cards
+    command.ts         slash-style panel commands
+
+  shared/
+    actions.ts  types.ts  settings.ts
+
 docs/
   redaction-pipeline.md   the cascade design, not yet implemented
 ```

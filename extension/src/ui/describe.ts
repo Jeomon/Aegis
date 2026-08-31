@@ -6,7 +6,7 @@
  * the first thing a person reads.
  */
 
-import type { BrowserAction } from '../actions'
+import type { BrowserAction } from '../shared/actions'
 
 export interface ActionSummary {
   /** Short imperative verb, shown as the card's title. */

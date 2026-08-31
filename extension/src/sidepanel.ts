@@ -3,15 +3,15 @@
  * no messaging through the service worker is needed to read, scan or drive the active tab.
  */
 
-import type { BrowserAction } from './actions'
-import { runAgentTurn } from './lib/agent'
-import { captureScreenshot, executeToolCall, runAction, scanPage } from './lib/browser'
-import type { ChatMessage } from './lib/chat'
-import type { TabInfo } from './lib/browser'
-import { COMMAND_HELP, invalidatesScan, parseCommand, startsNavigation } from './lib/command'
-import { describeAction } from './lib/describe'
-import { setMarkdown } from './lib/markdown'
-import { renderObservation } from './lib/observation'
+import type { BrowserAction } from './shared/actions'
+import { runAgentTurn } from './agent/agent'
+import { captureScreenshot, executeToolCall, runAction, scanPage } from './agent/browser'
+import type { ChatMessage } from './providers/chat'
+import type { TabInfo } from './agent/browser'
+import { COMMAND_HELP, invalidatesScan, parseCommand, startsNavigation } from './ui/command'
+import { describeAction } from './ui/describe'
+import { setMarkdown } from './ui/markdown'
+import { renderObservation } from './observe/observation'
 import {
   clearCredential,
   getCredential,
@@ -19,10 +19,10 @@ import {
   maskCredential,
   setCredential,
   setSettings,
-} from './lib/settings'
-import { PROVIDERS, checkUsable, getProvider, modelsFor } from './providers'
-import { mountSettings } from './settings-ui'
-import type { Message, PageContext, ScanResult } from './types'
+} from './shared/settings'
+import { PROVIDERS, checkUsable, getProvider, modelsFor } from './providers/registry'
+import { mountSettings } from './ui/settings-panel'
+import type { Message, PageContext, ScanResult } from './shared/types'
 
 const messagesEl = document.querySelector<HTMLDivElement>('#messages')!
 const formEl = document.querySelector<HTMLFormElement>('#composer')!

@@ -11,7 +11,7 @@
  * Regenerate rather than edit by hand.
  */
 
-import type { ModelConfig } from './providers'
+import type { ModelConfig } from './registry'
 
 export const CATALOGUE: readonly ModelConfig[] = [
   // ---- gemini (7) ---------------------------------------------------

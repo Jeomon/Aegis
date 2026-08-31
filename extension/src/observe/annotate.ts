@@ -10,7 +10,7 @@
  * image tokens.
  */
 
-import type { InteractiveElement } from '../types'
+import type { InteractiveElement } from '../shared/types'
 
 /** Distinct enough to tell adjacent boxes apart, dark enough for white label text. */
 const PALETTE = [

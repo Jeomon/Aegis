@@ -13,7 +13,7 @@
  * so whoever picks the model is responsible for checking it.
  */
 
-import { CATALOGUE } from './models.generated'
+import { CATALOGUE } from './catalogue.generated'
 
 export type Dialect = 'openai' | 'anthropic' | 'gemini'
 
