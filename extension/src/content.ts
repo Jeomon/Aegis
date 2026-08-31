@@ -10,6 +10,7 @@ import { ACT_MESSAGE } from './shared/actions'
 import type { ActMessage } from './shared/actions'
 import { executePageAction } from './page/execute'
 import { scanInteractive } from './page/scan'
+import { piiTextRegions } from './page/text-pii'
 import { conceal } from './page/vault'
 import { redactText } from './shared/detect'
 import { buildTree } from './page/tree'
@@ -35,6 +36,7 @@ function scan(): ScanResult {
     // fields, so the same Aadhaar in the title and in an input is one handle, not two.
     url: redactText(location.href, conceal).text,
     title: redactText(document.title, conceal).text,
+    piiRegions: piiTextRegions(),
     scanMs: Math.round(performance.now() - started),
     counts,
   }

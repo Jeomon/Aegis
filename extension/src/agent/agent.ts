@@ -108,6 +108,7 @@ export async function runAgentTurn(
         const annotated = await annotateScreenshot(capture, scan.elements, {
           devicePixelRatio: scan.viewport.devicePixelRatio,
           viewportWidth: scan.viewport.width,
+          piiRegions: scan.piiRegions,
         })
         image = annotated.dataUrl
 

@@ -10,7 +10,7 @@
  * image tokens.
  */
 
-import type { InteractiveElement } from '../shared/types'
+import type { Bounds, InteractiveElement } from '../shared/types'
 import { maskRegions, sensitiveRegions } from './redact/pixels'
 
 /** Distinct enough to tell adjacent boxes apart, dark enough for white label text. */
@@ -22,6 +22,8 @@ const LABEL_HEIGHT = 14
 const FONT = '11px ui-monospace, SFMono-Regular, Menlo, monospace'
 
 export interface AnnotateOptions {
+  /** Regions layer 2 found in rendered text, which belong to no element. */
+  piiRegions?: readonly Bounds[]
   /** Device pixels per CSS pixel in the capture. */
   devicePixelRatio: number
   /** CSS-pixel viewport, used to scale a HiDPI capture back down. */
@@ -71,7 +73,13 @@ export async function annotateScreenshot(
   // Masks go down before labels, in the same pass and the same coordinate space. Before,
   // so a label is never painted out by the mask beside it; the same pass, so there is no
   // second encode and no chance of the two disagreeing about where an element sits.
-  const masked = maskRegions(ctx, sensitiveRegions(elements), factor, width, height)
+  const masked = maskRegions(
+    ctx,
+    [...sensitiveRegions(elements), ...(options.piiRegions ?? [])],
+    factor,
+    width,
+    height,
+  )
 
   ctx.font = FONT
   ctx.textBaseline = 'top'

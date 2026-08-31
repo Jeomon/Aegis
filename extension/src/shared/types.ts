@@ -112,6 +112,11 @@ export interface ScanResult {
   }
   url: string
   title: string
+  /**
+   * Where layer 2 found identifiers in rendered text. Geometry only — these belong to no
+   * element, so they exist purely to be painted out of the screenshot.
+   */
+  piiRegions: Bounds[]
   scanMs: number
   counts: ScanCounts
 }

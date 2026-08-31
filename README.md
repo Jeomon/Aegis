@@ -41,8 +41,14 @@ the `[id]` labels and before them, so a label is never covered and the two can n
 disagree about where an element is. The count is reported to the model, so a black
 rectangle reads as a deliberate mask rather than a rendering failure to work around.
 
-Still unredacted: text rendered into the page itself rather than into a field, faces, and
-`evaluate` output.
+Identifiers printed into the page rather than typed into a field belong to no element and
+appear in no accessible name, so they are visible only in the screenshot. Layer 2 runs over
+the text nodes and measures each match with a `Range`; `getClientRects()` is CSS-pixel and
+viewport-relative, sharing an origin with the capture, so no scroll offset is involved. A
+match that wraps across lines yields several rects and each is masked separately, since one
+bounding box would cover the paragraph between them.
+
+Still unredacted: faces, and `evaluate` output.
 
 ---
 
