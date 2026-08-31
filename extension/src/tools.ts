@@ -131,7 +131,8 @@ export const BROWSER_TOOL = {
  * varies by observation mode and lives in lib/prompt.ts instead.
  */
 export const TOOL_GUIDELINES = [
-  'Interact through the [id] labels in the observation. Ids are stale as soon as the page',
+  'Interact through the [id] labels in the observation. Use only ids that appear in the',
+  'observation you were just given — never guess one. Ids are stale as soon as the page',
   'changes, so always use the latest ones.',
   '',
   'Set isSensitive=true when typing anything secret. Stop and ask the user at login walls',
