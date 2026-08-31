@@ -13,8 +13,15 @@
  * so a handle in a URL or a script cannot expand — it is structurally out of reach rather
  * than merely disallowed.
  *
- * Lifetime is the document's. A fresh navigation re-injects the content script and takes
- * the vault with it.
+ * Lifetime has two scales. The map is the document's — a fresh navigation re-injects the
+ * content script and takes the vault with it. Within that, each entry tracks the scan it
+ * was last seen in, so a value that has left the page stops resolving and is pruned.
+ *
+ * What must never happen is a handle coming to mean something different. Clearing the map
+ * each turn would do exactly that: handles persist in the transcript, so a restarted
+ * counter would let `password#1` from turn 1 resolve to a value the field only acquired at
+ * turn 4, and the agent would type a secret the model never asked for. The counter
+ * therefore only ever increases, and a handle is never reissued.
  */
 
 import type { SensitiveKind } from './sensitive'
@@ -22,11 +29,21 @@ import type { SensitiveKind } from './sensitive'
 interface Entry {
   kind: SensitiveKind
   value: string
+  /** The scan this value was last present in. */
+  seen: number
 }
 
 const byHandle = new Map<string, Entry>()
 const byValue = new Map<string, string>()
 let counter = 0
+let generation = 0
+
+/**
+ * How many scans an entry survives after it stops appearing on the page. One, not zero,
+ * because runAction() rescans and re-runs the same action when an element id goes stale —
+ * a handle in that retried action must still resolve.
+ */
+const GRACE = 1
 
 /** Matches a handle anywhere in a string the model produced. */
 export const HANDLE_PATTERN = /\[redacted:([a-z-]+)#(\d+)\]/g
@@ -41,15 +58,37 @@ export const HANDLE_PATTERN = /\[redacted:([a-z-]+)#(\d+)\]/g
 export function conceal(kind: SensitiveKind, value: string): string {
   const key = `${kind}\u0000${value}`
   const existing = byValue.get(key)
+
   // Both paths must return the same wrapped form. Returning the bare handle on the second
   // call made a rescan emit `value=password#1`, which HANDLE_PATTERN does not match — the
   // agent would then have typed that literal string into the field.
-  if (existing) return wrap(existing)
+  if (existing) {
+    const entry = byHandle.get(existing)
+    if (entry) entry.seen = generation
+    return wrap(existing)
+  }
 
   const handle = `${kind}#${++counter}`
   byValue.set(key, handle)
-  byHandle.set(handle, { kind, value })
+  byHandle.set(handle, { kind, value, seen: generation })
   return wrap(handle)
+}
+
+/**
+ * Open a new scan generation and drop values that have left the page.
+ *
+ * Called once before the page is walked, so everything still present is re-marked as the
+ * walk conceals it. Pruning is what keeps a secret from outliving its field; not reusing
+ * the handle is what keeps the pruning safe.
+ */
+export function beginScan(): void {
+  generation++
+
+  for (const [handle, entry] of byHandle) {
+    if (generation - entry.seen <= GRACE) continue
+    byHandle.delete(handle)
+    byValue.delete(`${entry.kind}\u0000${entry.value}`)
+  }
 }
 
 function wrap(handle: string): string {
@@ -84,12 +123,12 @@ export function rehydrate(text: string, targetKind: SensitiveKind | undefined): 
     const [token, kind, id] = match
     const entry = reveal(`${kind}#${id}`)
 
-    if (!entry) {
+    if (!entry || generation - entry.seen > GRACE) {
       return {
         ok: false,
         error:
-          `${token} is not a value from the current page — it may be from an earlier ` +
-          'observation. Re-read the page and use the handle shown there.',
+          `${token} is not a value on the page as it stands now — the field may have been ` +
+          'cleared or changed since. Re-read the page and use the handle shown there.',
       }
     }
 
@@ -115,4 +154,5 @@ export function resetVault(): void {
   byHandle.clear()
   byValue.clear()
   counter = 0
+  generation = 0
 }

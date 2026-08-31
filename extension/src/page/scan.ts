@@ -11,6 +11,7 @@
  */
 
 import { classifySensitive } from './sensitive'
+import { beginScan } from './vault'
 import { accessibleName, displayRole, hasWidgetStateAttributes, interactiveStates, isFocusable } from './accname'
 import {
   EXCLUDED_TAGS,
@@ -242,6 +243,9 @@ export interface ScanOutput {
 }
 
 export function scanInteractive(): ScanOutput {
+  // Opens a vault generation, so values gone from the page stop resolving after this.
+  beginScan()
+
   const counts: ScanCounts = {
     visited: 0,
     interactive: 0,
