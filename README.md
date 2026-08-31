@@ -48,6 +48,12 @@ viewport-relative, sharing an origin with the capture, so no scroll offset is in
 match that wraps across lines yields several rects and each is masked separately, since one
 bounding box would cover the paragraph between them.
 
+An egress guard wraps `fetch` in the side panel — which is what every provider SDK
+ultimately calls — and re-checks each outgoing body with the same detectors. It fails
+closed: an unconfigured host is refused, and a body it cannot parse is refused rather than
+trusted. If it ever fires, something upstream is broken, so it reports rather than quietly
+sanitising. Every attempt is logged with host, size and verdict.
+
 Still unredacted: faces, and `evaluate` output.
 
 ---
