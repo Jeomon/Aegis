@@ -14,6 +14,15 @@
 import type { ModelConfig } from './providers'
 
 export const CATALOGUE: readonly ModelConfig[] = [
+  // ---- gemini (7) ---------------------------------------------------
+  { provider: "gemini", id: "gemini-3.7-flash", label: "Gemini 3.7 Flash", tools: true, input: ["text", "image", "audio", "video", "file"], output: ["text"], thinkingLevels: ["low", "medium", "high"], thinkingFormat: "gemini", context: 1048576 },
+  { provider: "gemini", id: "gemini-3.5-flash", label: "Gemini 3.5 Flash", tools: true, input: ["text", "image", "audio", "video", "file"], output: ["text"], thinkingLevels: ["minimal", "low", "medium", "high"], thinkingFormat: "gemini", context: 1048576 },
+  { provider: "gemini", id: "gemini-3.1-flash-lite", label: "Gemini 3.1 Flash Lite", tools: true, input: ["text", "image", "audio", "video", "file"], output: ["text"], thinkingLevels: ["minimal", "low", "medium", "high"], thinkingFormat: "gemini", context: 1048576 },
+  { provider: "gemini", id: "gemini-3.1-pro-preview", label: "Gemini 3.1 Pro Preview", tools: true, input: ["text", "image", "audio", "video", "file"], output: ["text"], thinkingLevels: ["low", "medium", "high"], thinkingFormat: "gemini", context: 1048576 },
+  { provider: "gemini", id: "gemini-2.5-pro", label: "Gemini 2.5 Pro", tools: true, input: ["text", "image", "audio", "video", "file"], output: ["text"], thinkingLevels: ["minimal", "low", "medium", "high", "xhigh", "max"], thinkingFormat: "gemini", context: 1048576 },
+  { provider: "gemini", id: "gemini-2.5-flash", label: "Gemini 2.5 Flash", tools: true, input: ["text", "image", "audio", "video", "file"], output: ["text"], thinkingLevels: ["off", "minimal", "low", "medium", "high", "xhigh"], thinkingFormat: "gemini", context: 1048576 },
+  { provider: "gemini", id: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite", tools: true, input: ["text", "image", "audio", "video", "file"], output: ["text"], thinkingLevels: ["off", "minimal", "low", "medium", "high", "xhigh"], thinkingFormat: "gemini", context: 1048576 },
+
   // ---- openai (6) ---------------------------------------------------
   { provider: "openai", id: "gpt-5.5", label: "GPT-5.5", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "low", "medium", "high", "xhigh"], context: 1050000 },
   { provider: "openai", id: "gpt-5.4", label: "GPT-5.4", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "low", "medium", "high", "xhigh"], context: 1050000 },

@@ -15,7 +15,7 @@
 
 import { CATALOGUE } from './models.generated'
 
-export type Dialect = 'openai' | 'anthropic'
+export type Dialect = 'openai' | 'anthropic' | 'gemini'
 
 export interface ProviderConfig {
   id: string
@@ -64,6 +64,15 @@ export const PROVIDERS: readonly ProviderConfig[] = [
     baseUrl: 'https://api.anthropic.com',
     dialect: 'anthropic',
     credentialName: 'ANTHROPIC_API_KEY',
+    requiresCredential: true,
+  },
+  {
+    id: 'gemini',
+    label: 'Google Gemini',
+    // The Gen AI SDK targets Google's endpoint itself; this is recorded for reference only.
+    baseUrl: 'https://generativelanguage.googleapis.com',
+    dialect: 'gemini',
+    credentialName: 'GEMINI_API_KEY',
     requiresCredential: true,
   },
   {

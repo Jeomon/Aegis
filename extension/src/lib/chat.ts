@@ -16,6 +16,7 @@
 
 import OpenAI from 'openai'
 import { anthropicChat, anthropicChatStream } from './anthropic'
+import { geminiChat, geminiChatStream } from './gemini'
 import type { ProviderConfig } from '../providers'
 
 export type Role = 'system' | 'user' | 'assistant' | 'tool'
@@ -204,8 +205,10 @@ export function thinkingParams(request: Pick<ChatRequest, 'thinking' | 'thinking
     // 'off' simply means "think".
     case 'chat-template':
       return { chat_template_kwargs: { enable_thinking: enabled } }
-    // Anthropic's budget lives in its own request body, so nothing belongs here.
+    // Anthropic and Gemini both buy reasoning with a token budget inside their own request
+    // bodies, so nothing belongs in the OpenAI-shaped params.
     case 'anthropic':
+    case 'gemini':
       return {}
     case 'deepseek':
       return { chat_template_kwargs: { thinking: enabled } }
@@ -241,6 +244,7 @@ interface ReasoningBearing {
 /** One-shot: waits for the whole response. */
 export async function chat(request: ChatRequest): Promise<ChatResult> {
   if (request.provider.dialect === 'anthropic') return anthropicChat(request)
+  if (request.provider.dialect === 'gemini') return geminiChat(request)
 
   const client = clientFor(request.provider, request.apiKey)
 
@@ -278,6 +282,7 @@ export async function chatStream(
   handlers: StreamHandlers = {},
 ): Promise<ChatResult> {
   if (request.provider.dialect === 'anthropic') return anthropicChatStream(request, handlers)
+  if (request.provider.dialect === 'gemini') return geminiChatStream(request, handlers)
 
   const client = clientFor(request.provider, request.apiKey)
 
