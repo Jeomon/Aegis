@@ -7,6 +7,8 @@
  * the native setter or React ignores them.
  */
 
+import { classifySensitive } from './sensitive'
+import { rehydrate } from './vault'
 import type { ActionResult, MouseButton, PageAction, ScrollDirection } from '../shared/actions'
 import { resolveElement } from './scan'
 
@@ -155,14 +157,20 @@ function typeAction(action: Extract<PageAction, { type: 'type' }>): ActionResult
 
   if (action.text === undefined) return fail('Nothing to type — provide text or keys.')
 
+  // The model may be holding a handle rather than a value. Expanding it here means the
+  // real text exists only between this line and the keystroke below.
+  const rehydrated = rehydrate(action.text, classifySensitive(target))
+  if (!rehydrated.ok) return fail(rehydrated.error)
+  const text = rehydrated.text
+
   target.scrollIntoView({ block: 'center' })
   target.focus()
 
   if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
-    setNativeValue(target, action.clear ? action.text : target.value + action.text)
+    setNativeValue(target, action.clear ? text : target.value + text)
   } else if (target.isContentEditable) {
     if (action.clear) target.textContent = ''
-    target.textContent = (target.textContent ?? '') + action.text
+    target.textContent = (target.textContent ?? '') + text
   } else {
     return fail(`${describe(target)} is not a text field.`)
   }
@@ -170,7 +178,13 @@ function typeAction(action: Extract<PageAction, { type: 'type' }>): ActionResult
   target.dispatchEvent(new Event('input', { bubbles: true, composed: true }))
   target.dispatchEvent(new Event('change', { bubbles: true }))
 
-  const shown = action.isSensitive ? '(sensitive text)' : JSON.stringify(action.text.slice(0, 60))
+  // A restored handle is reported as such: the tool result is written to history, so
+  // naming the value there would undo the redaction one line later.
+  const shown = rehydrated.used.length
+    ? `the ${rehydrated.used.join(' and ')} value (restored on the device)`
+    : action.isSensitive
+      ? '(sensitive text)'
+      : JSON.stringify(action.text.slice(0, 60))
 
   if (action.pressEnter || action.keys) {
     const followed = pressKeys(action.keys ?? 'Enter')

@@ -7,6 +7,7 @@
  */
 
 import { classifySensitive } from './sensitive'
+import { conceal } from './vault'
 
 import { INLINE_ELEMENTS, INTERACTIVE_ROLES, STRONG_INTERACTIVE_TAGS, roleOf } from './roles'
 
@@ -211,7 +212,9 @@ export function interactiveStates(el: Element): string[] {
   const value = currentValue(el)
   if (value) {
     const kind = classifySensitive(el)
-    states.push(kind ? `value=[redacted:${kind}]` : `value="${truncate(value, VALUE_LIMIT)}"`)
+    // A handle rather than a bare label, so the agent can direct the value back into a
+    // field without ever being shown it.
+    states.push(kind ? `value=${conceal(kind, value)}` : `value="${truncate(value, VALUE_LIMIT)}"`)
   }
 
   return states
