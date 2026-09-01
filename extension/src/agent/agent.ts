@@ -16,6 +16,7 @@
  * currently non-compliant and marked as such in the settings UI.
  */
 
+import { concealForSession, restoreForAction } from '../observe/redact/session-vault'
 import { ChatError, chatStream, toolTurn, userTurn } from '../providers/chat'
 import type { ChatMessage } from '../providers/chat'
 import { annotateScreenshot } from '../observe/annotate'
@@ -43,6 +44,26 @@ const CAPACITY = /resourceexhausted|request limit|at capacity|overload|too many 
 const RETRY_DELAYS_MS = [1500, 4000]
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/**
+ * Expand any session handles inside a tool call's arguments.
+ *
+ * Only string fields are touched, and the kind travels with the value so the page can apply
+ * the same rule it applies to its own handles — a secret only ever enters a field of its
+ * own kind, whichever vault it came from.
+ */
+function restoreArguments(raw: string): unknown {
+  const parsed = JSON.parse(raw) as Record<string, unknown>
+
+  if (typeof parsed.text === 'string') {
+    const restored = restoreForAction(parsed.text)
+    if (restored.kinds.length) {
+      parsed.text = restored.text
+      parsed.expectKind = restored.kinds[0]
+    }
+  }
+  return parsed
+}
 
 export interface AgentEvents {
   /** A new step of the loop begins — reset any live bubbles. */
@@ -76,7 +97,10 @@ export async function runAgentTurn(
     return
   }
 
-  history.push({ role: 'user', content: userText })
+  // The user's own message is a source of PII like any other, and an unredacted one does
+  // not merely leak: the egress guard fails closed, so the turn would die instead. The
+  // value stays in the session vault and the model receives a handle it can direct.
+  history.push({ role: 'user', content: concealForSession(userText) })
 
   for (let step = 0; ; step++) {
     if (signal?.aborted) return
@@ -207,7 +231,9 @@ export async function runAgentTurn(
 
       let outcome: { ok: boolean; message: string }
       try {
-        outcome = await executeToolCall(JSON.parse(call.function.arguments))
+        // Handles the panel minted are expanded here, one step before the action reaches
+        // the page — the page's vault never saw these values and could not resolve them.
+        outcome = await executeToolCall(restoreArguments(call.function.arguments))
       } catch {
         outcome = {
           ok: false,
@@ -215,8 +241,12 @@ export async function runAgentTurn(
         }
       }
 
-      events.onToolResult(outcome.message, outcome.ok)
-      history.push(toolTurn(call.id, outcome.message))
+      // Tool results are permanent in history, so an identifier echoed by one — a tab
+      // title, a URL, whatever evaluate returned — would sit in the transcript for every
+      // later turn. Redacting the observation but not the results would be theatre.
+      const redacted = concealForSession(outcome.message)
+      events.onToolResult(redacted, outcome.ok)
+      history.push(toolTurn(call.id, redacted))
     }
   }
 

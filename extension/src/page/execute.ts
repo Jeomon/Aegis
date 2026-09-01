@@ -157,9 +157,21 @@ function typeAction(action: Extract<PageAction, { type: 'type' }>): ActionResult
 
   if (action.text === undefined) return fail('Nothing to type — provide text or keys.')
 
-  // The model may be holding a handle rather than a value. Expanding it here means the
+  const targetKind = classifySensitive(target)
+
+  // A value the panel already expanded arrives with its kind attached, since this frame's
+  // vault never held it. Same rule either way: a secret only enters a field of its own kind.
+  if (action.expectKind && targetKind !== action.expectKind) {
+    return fail(
+      `A ${action.expectKind} value cannot be entered into ${
+        targetKind ? `a ${targetKind} field` : 'a field that holds no declared secret'
+      }.`,
+    )
+  }
+
+  // The model may be holding a page handle rather than a value. Expanding it here means the
   // real text exists only between this line and the keystroke below.
-  const rehydrated = rehydrate(action.text, classifySensitive(target))
+  const rehydrated = rehydrate(action.text, targetKind)
   if (!rehydrated.ok) return fail(rehydrated.error)
   const text = rehydrated.text
 

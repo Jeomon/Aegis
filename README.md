@@ -60,8 +60,15 @@ child answers in its own coordinates; only the parent knows the iframe's positio
 does the translation. Each frame gets its own vault namespace, and a handle minted in one
 frame cannot be redeemed in another.
 
-Still unredacted: faces, `evaluate` output, and anything inside a closed shadow root.
-`evaluate` also runs only in the top frame.
+The user's own messages and every tool result pass through a second vault in the side
+panel, under an `s` namespace kept separate from the page's. Without it an identifier the
+user typed themselves would not merely leak — the egress guard fails closed, so the turn
+would die. Handles the panel minted are expanded one step before the action reaches the
+page, with the kind travelling alongside so the page applies the same same-kind rule to
+them as to its own.
+
+Still unredacted: faces, and anything inside a closed shadow root. `evaluate` returns raw
+page data by choice and runs only in the top frame.
 
 ---
 

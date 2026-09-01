@@ -1,3 +1,5 @@
+import type { SensitiveKind } from './types'
+
 /**
  * The action vocabulary.
  *
@@ -31,6 +33,12 @@ export type PageAction =
       elementId?: number
       /** Text to type, or the option text to choose when the target is a <select>. */
       text?: string
+      /**
+       * Set when the panel expanded one of its own handles into `text`. The page cannot
+       * resolve a session handle, so the kind travels with the value instead and the same
+       * same-kind rule is applied here.
+       */
+      expectKind?: SensitiveKind
       /** A key or chord instead of text, e.g. 'Enter', 'Escape', 'CTRL+a'. */
       keys?: string
       clear?: boolean

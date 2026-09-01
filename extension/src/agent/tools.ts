@@ -218,6 +218,8 @@ export function validateToolInput(input: unknown): ValidationResult {
         ok: true,
         action: {
           type: 'type',
+          // Not model-facing: set by the panel when it expands one of its own handles.
+          expectKind: raw.expectKind as never,
           elementId,
           text,
           keys,
