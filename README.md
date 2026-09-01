@@ -54,7 +54,14 @@ closed: an unconfigured host is refused, and a body it cannot parse is refused r
 trusted. If it ever fires, something upstream is broken, so it reports rather than quietly
 sanitising. Every attempt is logged with host, size and verdict.
 
-Still unredacted: faces, and `evaluate` output.
+Cross-origin iframes are covered too — element discovery, clicking, typing and scrolling as
+well as redaction. A child frame cannot learn where it sits, so the parent asks and the
+child answers in its own coordinates; only the parent knows the iframe's position, so it
+does the translation. Each frame gets its own vault namespace, and a handle minted in one
+frame cannot be redeemed in another.
+
+Still unredacted: faces, `evaluate` output, and anything inside a closed shadow root.
+`evaluate` also runs only in the top frame.
 
 ---
 

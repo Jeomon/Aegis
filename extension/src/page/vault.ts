@@ -46,7 +46,26 @@ let generation = 0
 const GRACE = 1
 
 /** Matches a handle anywhere in a string the model produced. */
-export const HANDLE_PATTERN = /\[redacted:([a-z-]+)#(\d+)\]/g
+export const HANDLE_PATTERN = /\[redacted:([a-z-]+)#([a-z0-9-]+)\]/g
+
+/**
+ * Distinguishes this frame's handles from every other frame's.
+ *
+ * Without it each frame counts from 1 and mints password#1 for a different secret, so the
+ * model would see one name for two values — and directing that handle at a field would
+ * restore whichever the receiving frame happened to hold. Empty in the top frame, so its
+ * handles stay the short form.
+ */
+let tag = ''
+
+export function setFrameHandleTag(value: string): void {
+  tag = value
+}
+
+/** This frame's namespace, which its own children extend by one segment. */
+export function handleTag(): string {
+  return tag
+}
 
 /**
  * Store a value and return the handle standing in for it.
@@ -68,7 +87,7 @@ export function conceal(kind: SensitiveKind, value: string): string {
     return wrap(existing)
   }
 
-  const handle = `${kind}#${++counter}`
+  const handle = `${kind}#${tag}${++counter}`
   byValue.set(key, handle)
   byHandle.set(handle, { kind, value, seen: generation })
   return wrap(handle)

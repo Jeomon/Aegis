@@ -32,6 +32,7 @@ import type { Bounds, InteractiveElement, ScanCounts } from '../shared/types'
 const ids = new WeakMap<Element, number>()
 let nextId = 1
 
+
 /**
  * Reverse lookup for actions, rebuilt on every scan. Actions arrive after the scan has
  * returned, so this has to be module state rather than something handed to the caller.
@@ -44,6 +45,7 @@ function idOf(el: Element): number {
   let id = ids.get(el)
   if (id === undefined) {
     id = nextId++
+
     ids.set(el, id)
   }
   return id

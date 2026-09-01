@@ -8,18 +8,17 @@
 
 import { ACT_MESSAGE } from './shared/actions'
 import type { ActMessage } from './shared/actions'
-import { executePageAction } from './page/execute'
-import { scanInteractive } from './page/scan'
-import { piiTextRegions } from './page/text-pii'
+import { collectFrame, dispatchAction, installFrameResponder } from './page/frames'
 import { conceal } from './page/vault'
 import { redactText } from './shared/detect'
-import { buildTree } from './page/tree'
 import type { ScanResult } from './shared/types'
 
-function scan(): ScanResult {
+async function scan(): Promise<ScanResult> {
   const started = performance.now()
-  const { elements, kept, counts } = scanInteractive()
-  const roots = buildTree(elements, kept)
+
+  // This frame plus every frame it embeds: elements, their tree, and the regions to paint
+  // out — all already translated into this frame's coordinates.
+  const { elements, roots, regions: piiRegions, counts } = await collectFrame()
 
   return {
     elements,
@@ -36,7 +35,7 @@ function scan(): ScanResult {
     // fields, so the same Aadhaar in the title and in an input is one handle, not two.
     url: redactText(location.href, conceal).text,
     title: redactText(document.title, conceal).text,
-    piiRegions: piiTextRegions(),
+    piiRegions,
     scanMs: Math.round(performance.now() - started),
     counts,
   }
@@ -44,13 +43,16 @@ function scan(): ScanResult {
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === 'AEGIS_SCAN') {
-    sendResponse(scan())
-    return
+    scan().then(sendResponse).catch(() => sendResponse(undefined))
+    return true // asking the child frames makes this asynchronous
   }
 
   if (message?.type === ACT_MESSAGE) {
     const { action } = message as ActMessage
-    executePageAction(action)
+
+    // An id belonging to a frame we embed is routed there; dispatchAction handles both
+    // cases, and keeps routing at every hop rather than only the first.
+    dispatchAction(action)
       .then(sendResponse)
       .catch((err: unknown) =>
         sendResponse({ ok: false, message: err instanceof Error ? err.message : String(err) }),
@@ -58,3 +60,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true // response is async
   }
 })
+
+// Every frame answers its parent; only the top frame is ever asked to scan, because only
+// it has a screenshot to align with.
+installFrameResponder()

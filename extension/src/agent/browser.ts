@@ -34,12 +34,25 @@ async function activeTab(): Promise<chrome.tabs.Tab> {
  * extension. A fresh injection has no scan behind it, so ids will not resolve until the
  * caller rescans — which is exactly what the staleId path reports.
  */
+/**
+ * Always the top frame.
+ *
+ * The content script runs in every frame now, so that redaction can reach inside
+ * cross-origin iframes — which means an unaddressed message would be delivered to all of
+ * them and answered by whichever replied first. Only frame 0 holds the element registry
+ * the ids refer to, and only frame 0's coordinates match the screenshot.
+ */
+const TOP_FRAME = { frameId: 0 } as const
+
 async function sendToPage<T>(tabId: number, message: unknown): Promise<T> {
   try {
-    return await chrome.tabs.sendMessage(tabId, message)
+    return await chrome.tabs.sendMessage(tabId, message, TOP_FRAME)
   } catch {
-    await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] })
-    return await chrome.tabs.sendMessage(tabId, message)
+    await chrome.scripting.executeScript({
+      target: { tabId, frameIds: [0] },
+      files: ['content.js'],
+    })
+    return await chrome.tabs.sendMessage(tabId, message, TOP_FRAME)
   }
 }
 
