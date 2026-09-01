@@ -9,7 +9,10 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     target: 'esnext',
-    minify: false,
+    // On for the submitted build: client resource use is a scored metric, and an unpacked
+    // extension ships whatever is in dist/. Sourcemaps stay so the code is still readable
+    // to anyone reviewing it — they are separate files the browser only fetches on demand.
+    minify: true,
     sourcemap: true,
     rollupOptions: {
       input: {

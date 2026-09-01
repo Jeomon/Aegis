@@ -4,6 +4,17 @@
 precision can be measured rather than eyeballed. Both are rubric lines — 20% for PII
 recall/precision, 20% for redaction precision — and neither can be read off a screenshot.
 
+## Running it
+
+```sh
+cd extension && npm run build     # the scorer reads dist/content.js
+node tests/score.mjs
+```
+
+Chrome for Testing is used, because branded Chrome refuses `--load-extension`. Set
+`AEGIS_CHROME` if yours is elsewhere. The run exits non-zero only on a **false positive** —
+a miss is a known gap recorded below, while a decoy being masked is a regression.
+
 ## How ground truth is encoded
 
 Every identifier sits in `<span data-pii="kind">`; every decoy sits in
