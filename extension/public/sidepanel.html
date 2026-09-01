@@ -49,6 +49,10 @@
         border: 1px solid var(--line); border-radius: 8px;
         background: var(--panel); color: var(--text);
         font-size: 17px; line-height: 1; cursor: pointer;
+        /* Centred explicitly: a glyph's own metrics differ per character, so ⚙ sat right
+           and ⇅ did not. Flex centres the box, whatever is inside it. */
+        display: inline-flex; align-items: center; justify-content: center;
+        position: relative;
       }
       .gear:hover { border-color: var(--accent); }
 
@@ -163,11 +167,12 @@
       .msg.user .bubble a { color: #fff; text-decoration: underline; }
 
       /* ---------------------------------------------------------- network */
-      /* A dot on the toggle, so a refusal is noticed without the panel being open. */
+      /* A pip on the toggle, so a refusal is noticed without the panel being open. It is
+         positioned rather than laid out, so an empty dot does not nudge the icon. */
       .netdot {
-        width: 6px; height: 6px; border-radius: 50%;
-        background: transparent; display: inline-block; margin-right: 3px;
-        vertical-align: middle;
+        position: absolute; top: 4px; right: 4px;
+        width: 5px; height: 5px; border-radius: 50%;
+        background: transparent;
       }
       .netdot.sent { background: var(--accent); }
       .netdot.blocked { background: #e5484d; }
@@ -303,7 +308,12 @@
         </div>
         <button id="scan" class="chip" type="button">Scan page</button>
         <button id="networkToggle" class="gear" type="button" title="Network" aria-label="Network">
-          <span id="networkDot" class="netdot"></span>⇅
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 20V5m0 0L6 8m3-3 3 3" />
+            <path d="M15 4v15m0 0 3-3m-3 3-3-3" />
+          </svg>
+          <span id="networkDot" class="netdot"></span>
         </button>
         <button id="settingsToggle" class="gear" type="button" title="Settings" aria-label="Settings">⚙</button>
       </div>
