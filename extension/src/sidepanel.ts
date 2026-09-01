@@ -24,10 +24,12 @@ import { PROVIDERS, checkUsable, getProvider, modelsFor } from './providers/regi
 import { mountSettings } from './ui/settings-panel'
 import type { Message, PageContext, ScanResult } from './shared/types'
 import { installEgressGuard } from './observe/redact/egress'
+import { mountNetworkPanel } from './ui/network-panel'
 
 // Installed before anything can issue a request: the SDKs call fetch, so wrapping it is
 // the one place every provider path must pass through.
 installEgressGuard()
+mountNetworkPanel()
 
 const messagesEl = document.querySelector<HTMLDivElement>('#messages')!
 const formEl = document.querySelector<HTMLFormElement>('#composer')!

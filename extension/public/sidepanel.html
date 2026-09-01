@@ -162,6 +162,40 @@
       .bubble a { color: var(--accent); }
       .msg.user .bubble a { color: #fff; text-decoration: underline; }
 
+      /* ---------------------------------------------------------- network */
+      /* A dot on the toggle, so a refusal is noticed without the panel being open. */
+      .netdot {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: transparent; display: inline-block; margin-right: 3px;
+        vertical-align: middle;
+      }
+      .netdot.sent { background: var(--accent); }
+      .netdot.blocked { background: #e5484d; }
+
+      #network {
+        border-bottom: 1px solid var(--line);
+        max-height: 190px; overflow-y: auto;
+        padding: 10px 14px 12px; flex: none;
+      }
+      .nethead {
+        display: flex; justify-content: space-between; align-items: baseline;
+        font-size: 11px; color: var(--muted); margin-bottom: 8px;
+        text-transform: uppercase; letter-spacing: 0.04em;
+      }
+      .nethead .hint { margin: 0; text-transform: none; letter-spacing: 0; }
+      .net {
+        display: grid; grid-template-columns: 14px 1fr auto;
+        gap: 8px; align-items: baseline;
+        padding: 5px 0; border-top: 1px solid var(--line);
+        font-size: 11px; line-height: 1.5;
+      }
+      .net:first-child { border-top: 0; }
+      .net .mark { font-weight: 600; }
+      .net.sent .mark { color: var(--accent); }
+      .net.blocked .mark { color: #e5484d; }
+      .net .host { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--fg); }
+      .net .size { color: var(--muted); font-variant-numeric: tabular-nums; }
+      .net .why { grid-column: 2 / -1; color: #e5484d; }
       /* ---------------------------------------------------------- settings */
       #settings { flex: 1; overflow-y: auto; padding: 14px; display: none; }
       #settings.open { display: block; }
@@ -268,10 +302,29 @@
           <h1>Aegis</h1>
         </div>
         <button id="scan" class="chip" type="button">Scan page</button>
+        <button id="networkToggle" class="gear" type="button" title="Network" aria-label="Network">
+          <span id="networkDot" class="netdot"></span>⇅
+        </button>
         <button id="settingsToggle" class="gear" type="button" title="Settings" aria-label="Settings">⚙</button>
       </div>
       <div id="context">Loading…</div>
     </header>
+
+    <!--
+      Every request the extension makes, as it happens. The claim is that nothing leaves
+      this device unredacted; this is where that stops being a claim.
+    -->
+    <section id="network" hidden>
+      <div class="nethead">
+        <span>Outbound requests</span>
+        <span id="netSummary" class="hint"></span>
+      </div>
+      <div id="netList"></div>
+      <div id="netEmpty" class="hint">
+        Nothing has left the device yet. Every request is checked against the same
+        detectors that redact the page, and refused if anything slips through.
+      </div>
+    </section>
 
     <div id="messages">
       <div id="empty">Ask about this page, or tell me what to do on it.</div>
