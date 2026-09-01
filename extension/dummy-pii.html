@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PII Redaction Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+            color: #333;
+        }
+        .card {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        h2 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .highlight {
+            background-color: #fff3cd;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Aegis Redaction Test Page</h1>
+    <p>This page contains mathematically valid sensitive identifiers that the Aegis extension should detect and redact.</p>
+
+    <div class="card">
+        <h2>Unstructured Text Data</h2>
+        <p>
+            Hello, my name is <strong>Rahul Sharma</strong> and I operate a small business in Mumbai. 
+            For compliance purposes, my GSTIN is <span class="highlight">27ABCPE1234F1Z5</span>, 
+            which is linked to my company PAN <span class="highlight">ABCPE1234F</span>.
+        </p>
+        <p>
+            My personal Aadhaar number for identity verification is <span class="highlight">2000 0000 0009</span>. 
+        </p>
+        <p>
+            Please process the refund to my bank account. The IFSC code for my HDFC branch is <span class="highlight">HDFC0001234</span>. 
+            Alternatively, you can charge my credit card ending in 0002. The full number is <span class="highlight">4000 0000 0000 0002</span>.
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>Contact Form</h2>
+        <form action="#" method="POST">
+            <div class="form-group">
+                <label for="name">Full Name</label>
+                <input type="text" id="name" name="name" value="Rahul Sharma">
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" value="rahul.sharma@example.com">
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="tel" id="phone" name="phone" value="+91 9876543210">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password (Should not be sent as plaintext)</label>
+                <input type="password" id="password" name="password" value="SuperSecretPassword123!">
+            </div>
+
+            <button type="button" style="padding: 0.5rem 1rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Submit Request</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Image Data (OCR Test)</h2>
+        <p>This is an actual image element. The extension should extract and redact the Aadhaar number from it.</p>
+        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iMjUwIiBzdHlsZT0iYmFja2dyb3VuZDogI2YwZjhmZjsgYm9yZGVyOiAycHggc29saWQgIzMzMzsgYm9yZGVyLXJhZGl1czogMTBweDsgZm9udC1mYW1pbHk6IHNhbnMtc2VyaWY7Ij4KICA8cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjMDAzMzY2IiAvPgogIDx0ZXh0IHg9IjIwMCIgeT0iMzIiIGZvbnQtc2l6ZT0iMjIiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R292ZXJubWVudCBJRCBDYXJkPC90ZXh0PgogIAogIDxyZWN0IHg9IjIwIiB5PSI3MCIgd2lkdGg9IjgwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2NjYyIgLz4KICA8dGV4dCB4PSI2MCIgeT0iMTI1IiBmb250LXNpemU9IjEyIiBmaWxsPSIjNjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5QSE9UTzwvdGV4dD4KCiAgPHRleHQgeD0iMTIwIiB5PSI5MCIgZm9udC1zaXplPSIxNiIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiMzMzMiPk5hbWU6IFJhaHVsIFNoYXJtYTwvdGV4dD4KICA8dGV4dCB4PSIxMjAiIHk9IjEyMCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzMzMyI+RW1haWw6IHJhaHVsLnNoYXJtYUBleGFtcGxlLmNvbTwvdGV4dD4KICA8dGV4dCB4PSIxMjAiIHk9IjE1MCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzMzMyI+RE9COiAxNS0wOC0xOTg1PC90ZXh0PgogIAogIDx0ZXh0IHg9IjIwMCIgeT0iMjEwIiBmb250LXNpemU9IjI4IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzAwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+MjAwMCAwMDAwIDAwMDk8L3RleHQ+Cjwvc3ZnPg==" alt="Fake ID Image" style="border: 1px solid #ccc; max-width: 100%;">
+    </div>
+
+</body>
+</html>

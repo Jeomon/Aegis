@@ -10,7 +10,6 @@ dist/
 
 # Temporary test files & documentation
 UNSTRUCTURED_TEXT_REDACTION.md
-dummy-pii.html
 gen-dummy.ts
 test.ts
 scratch-test.mjs
