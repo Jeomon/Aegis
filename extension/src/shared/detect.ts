@@ -167,6 +167,10 @@ const DETECTORS: Detector[] = [
       return digits.length === 10 || (digits.length === 12 && digits.startsWith('91'))
     },
   },
+  {
+    kind: 'date',
+    pattern: /\b\d{1,2}[-/\s]\d{1,2}[-/\s]\d{2,4}\b/g,
+  },
 ]
 
 /**
@@ -211,9 +215,21 @@ export function findPii(text: string): Match[] {
 export function redactText(
   text: string,
   conceal?: (kind: SensitiveKind, value: string) => string,
+  extraMatches: Match[] = []
 ): { text: string; kinds: SensitiveKind[] } {
-  const matches = findPii(text)
+  let matches = [...findPii(text), ...extraMatches]
   if (!matches.length) return { text, kinds: [] }
+
+  matches.sort((a, b) => a.start - b.start || b.end - a.end)
+  
+  const kept: Match[] = []
+  let consumed = -1
+  for (const match of matches) {
+    if (match.start < consumed) continue
+    kept.push(match)
+    consumed = match.end
+  }
+  matches = kept
 
   let out = ''
   let cursor = 0

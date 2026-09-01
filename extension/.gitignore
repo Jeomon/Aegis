@@ -7,3 +7,15 @@ node_modules/
 dist/
 *.log
 .DS_Store
+
+# Temporary test files & documentation
+UNSTRUCTURED_TEXT_REDACTION.md
+dummy-pii.html
+gen-dummy.ts
+test.ts
+scratch-test.mjs
+test-dom.mjs
+test-text.png
+test.png
+test.svg
+eng.traineddata

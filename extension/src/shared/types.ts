@@ -20,6 +20,10 @@ export type SensitiveKind =
   | 'gstin'
   | 'ifsc'
   | 'account'
+  | 'date'
+  | 'PER'
+  | 'LOC'
+  | 'ORG'
 
 export type Role = 'user' | 'assistant'
 
@@ -112,6 +116,7 @@ export interface ScanResult {
   }
   url: string
   title: string
+  pageText: string
   /**
    * Where layer 2 found identifiers in rendered text. Geometry only — these belong to no
    * element, so they exist purely to be painted out of the screenshot.

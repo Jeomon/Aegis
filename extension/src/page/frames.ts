@@ -214,7 +214,7 @@ function frameLabel(frame: EmbeddedFrame): string {
 export async function collectFrame(depth = 0): Promise<FramePayload> {
   const { elements, kept, counts } = scanInteractive()
   const roots = buildTree(elements, kept)
-  const regions = [...sensitiveFieldRegions(), ...piiTextRegions()]
+  const regions = [...sensitiveFieldRegions(), ...await piiTextRegions()]
 
   if (depth >= MAX_DEPTH) return { elements, roots, regions, counts }
 

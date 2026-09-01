@@ -11,6 +11,8 @@ import type { ActMessage } from './shared/actions'
 import { collectFrame, dispatchAction, installFrameResponder } from './page/frames'
 import { conceal } from './page/vault'
 import { redactText } from './shared/detect'
+import { extractRedactedText } from './page/text-pii'
+import { scanImagesForPii } from './page/image-ocr'
 import type { ScanResult } from './shared/types'
 
 async function scan(): Promise<ScanResult> {
@@ -19,6 +21,14 @@ async function scan(): Promise<ScanResult> {
   // This frame plus every frame it embeds: elements, their tree, and the regions to paint
   // out — all already translated into this frame's coordinates.
   const { elements, roots, regions: piiRegions, counts } = await collectFrame()
+
+    const ocrResult = await scanImagesForPii()
+    
+    // Combine text
+    const extractedText = await extractRedactedText();
+    const fullPageText = extractedText + (ocrResult.text ? '\n' + ocrResult.text : '')
+    // Combine regions
+    const allRegions = [...piiRegions, ...ocrResult.regions]
 
   return {
     elements,
@@ -35,7 +45,8 @@ async function scan(): Promise<ScanResult> {
     // fields, so the same Aadhaar in the title and in an input is one handle, not two.
     url: redactText(location.href, conceal).text,
     title: redactText(document.title, conceal).text,
-    piiRegions,
+    pageText: fullPageText,
+    piiRegions: allRegions,
     scanMs: Math.round(performance.now() - started),
     counts,
   }

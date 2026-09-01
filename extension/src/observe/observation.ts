@@ -37,6 +37,10 @@ export function renderObservation(
   if (tree) parts.push(`${TREE_HEADING}\n${tree}`)
   else parts.push('No interactive elements are visible on this page.')
 
+  if (scan.pageText) {
+    parts.push(`Page Content (Unstructured Text):\n${scan.pageText}`)
+  }
+
   return parts.join('\n\n')
 }
 

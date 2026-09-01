@@ -15,7 +15,8 @@
  * cover the whole paragraph width between them.
  */
 
-import { findPii } from '../shared/detect'
+import { findPii, redactText } from '../shared/detect'
+import { conceal } from './vault'
 import type { Bounds } from '../shared/types'
 
 /** Nothing inside these carries rendered text worth measuring. */
@@ -82,29 +83,54 @@ function* eachTextNode(root: Node): Generator<Text> {
   }
 }
 
-export function piiTextRegions(): Bounds[] {
+import { findNerPiiBatch } from '../shared/ner'
+import type { Match } from '../shared/detect'
+
+export async function piiTextRegions(): Promise<Bounds[]> {
   const regions: Bounds[] = []
 
   let visited = 0
+  const validNodes: Text[] = []
+  const textsToScan: string[] = []
+
   for (const node of eachTextNode(document.body)) {
-    if (++visited > MAX_NODES || regions.length >= MAX_RECTS) break
+    if (++visited > MAX_NODES) break
 
     const parent = node.parentElement
     if (!parent || SKIP_TAGS.has(parent.tagName.toLowerCase())) continue
-    // Short runs cannot hold any identifier we look for; the shortest is a ten-digit phone.
     if (!node.nodeValue || node.nodeValue.trim().length < 10) continue
 
-    const text = node.nodeValue
-    const matches = findPii(text)
-    if (!matches.length) continue
+    validNodes.push(node)
+    textsToScan.push(node.nodeValue)
+  }
 
+  const batchNerMatches = await findNerPiiBatch(textsToScan);
+
+  for (let i = 0; i < validNodes.length; i++) {
+    if (regions.length >= MAX_RECTS) break;
+    
+    const node = validNodes[i];
+    const text = textsToScan[i];
+    const mlMatches = batchNerMatches[i];
+
+    let matches = [...findPii(text), ...mlMatches];
+    if (!matches.length) continue;
+
+    matches.sort((a, b) => a.start - b.start || b.end - a.end);
+    const kept: Match[] = []
+    let consumed = -1
     for (const match of matches) {
+      if (match.start < consumed) continue
+      kept.push(match)
+      consumed = match.end
+    }
+
+    for (const match of kept) {
       const range = document.createRange()
       range.setStart(node, match.start)
       range.setEnd(node, match.end)
 
       for (const rect of range.getClientRects()) {
-        // A zero-area rect is a collapsed or undisplayed fragment, not something on screen.
         if (rect.width <= 0 || rect.height <= 0) continue
         if (offScreen(rect)) continue
         regions.push(toBounds(rect))
@@ -117,4 +143,30 @@ export function piiTextRegions(): Bounds[] {
   }
 
   return regions
+}
+
+export async function extractRedactedText(): Promise<string> {
+  const fullText: string[] = []
+  const textsToScan: string[] = []
+
+  for (const node of eachTextNode(document.body)) {
+    const parent = node.parentElement
+    if (!parent || SKIP_TAGS.has(parent.tagName.toLowerCase())) continue
+    
+    const text = node.nodeValue
+    if (!text || text.trim().length === 0) continue
+
+    textsToScan.push(text)
+  }
+
+  const batchNerMatches = await findNerPiiBatch(textsToScan);
+
+  for (let i = 0; i < textsToScan.length; i++) {
+    const text = textsToScan[i];
+    const mlMatches = batchNerMatches[i];
+    const { text: redacted } = redactText(text, conceal, mlMatches)
+    fullText.push(redacted)
+  }
+  
+  return fullText.join('\n')
 }
