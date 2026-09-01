@@ -116,6 +116,7 @@ export async function runAgentTurn(
     events.onStep(step)
     const wantsTree = target.observationMode !== 'screenshot'
     const wantsImage = target.observationMode !== 'tree'
+    console.log('[Aegis] observationMode=', target.observationMode, 'wantsImage=', wantsImage)
 
     let observation: string
     let image: string | undefined
@@ -147,6 +148,7 @@ export async function runAgentTurn(
         }
       }
     } catch (err: unknown) {
+      console.error('[Aegis] observation/annotate step failed:', err)
       // A browser-internal page has no observation; the model can still answer from history.
       observation = `Browser state unavailable: ${err instanceof Error ? err.message : String(err)}`
       image = undefined
