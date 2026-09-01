@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aegis Face Detection & PII Masking Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .content {
+            padding: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 25px;
+            background: #f9f9f9;
+        }
+
+        .section h2 {
+            color: #667eea;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group input[type="password"] {
+            letter-spacing: 2px;
+        }
+
+        .image-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .image-item {
+            position: relative;
+            cursor: pointer;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .image-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .image-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .image-item-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px;
+            font-size: 0.85em;
+            text-align: center;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1em;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            border: 2px solid #e0e0e0;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-success {
+            background: #43a047;
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(67, 160, 71, 0.4);
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+            color: #1565c0;
+        }
+
+        .success-box {
+            background: #e8f5e9;
+            border-left: 4px solid #43a047;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+            color: #2e7d32;
+        }
+
+        .grid-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .grid-item {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .grid-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .grid-item-icon {
+            font-size: 2em;
+            margin-bottom: 8px;
+        }
+
+        .grid-item-text {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-family: monospace;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .test-status {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 6px;
+        }
+
+        .test-status h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .test-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .test-item:last-child {
+            border-bottom: none;
+        }
+
+        .test-status-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .test-status-icon.ready {
+            background: #43a047;
+        }
+
+        .footer {
+            background: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ Aegis Test Suite</h1>
+            <p>Face Detection & PII Masking Verification</p>
+        </div>
+
+        <div class="content">
+            <!-- Left Column: Forms & PII -->
+            <div>
+                <div class="section">
+                    <h2>📝 Login Form (PII Test)</h2>
+                    <div class="info-box">
+                        <strong>Test:</strong> These fields should be masked in screenshots
+                    </div>
+                    <form>
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" placeholder="user@example.com" 
+                                   autocomplete="email" value="john.doe@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" placeholder="+1 (555) 123-4567" 
+                                   autocomplete="tel" value="+1 (555) 987-6543">
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" placeholder="Enter password" 
+                                   autocomplete="current-password" value="SecurePass123!">
+                        </div>
+                        <div class="form-group">
+                            <label for="cc">Credit Card</label>
+                            <input type="text" id="cc" placeholder="4532 1234 5678 9010" 
+                                   autocomplete="cc-number" value="4532123456789010">
+                        </div>
+                        <div class="form-group">
+                            <label for="cvv">CVV</label>
+                            <input type="text" id="cvv" placeholder="123" 
+                                   autocomplete="cc-csc" value="456">
+                        </div>
+                        <button type="submit" class="btn-primary">Submit (Test)</button>
+                    </form>
+                </div>
+
+                <div class="section" style="margin-top: 20px;">
+                    <h2>👤 Profile Information</h2>
+                    <div class="info-box">
+                        <strong>Test:</strong> Personal data fields
+                    </div>
+                    <form>
+                        <div class="form-group">
+                            <label for="name">Full Name</label>
+                            <input type="text" id="name" value="John Michael Doe">
+                        </div>
+                        <div class="form-group">
+                            <label for="dob">Date of Birth</label>
+                            <input type="date" id="dob" value="1990-05-15" autocomplete="bday">
+                        </div>
+                        <div class="form-group">
+                            <label for="address">Street Address</label>
+                            <input type="text" id="address" value="123 Main Street, Springfield" 
+                                   autocomplete="street-address">
+                        </div>
+                        <div class="form-group">
+                            <label for="zipcode">Postal Code</label>
+                            <input type="text" id="zipcode" value="12345" autocomplete="postal-code">
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right Column: Images & Media -->
+            <div>
+                <div class="section">
+                    <h2>🖼️ Face Detection Test Images</h2>
+
+                    <h3 style="margin-top: 20px; margin-bottom: 15px; color: #666;">Sample Faces</h3>
+                    <div class="image-gallery">
+                        <!-- Using Placeholder images with faces -->
+                        <div class="image-item">
+                            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=150&fit=crop" 
+                                 alt="Person 1">
+                            <div class="image-item-label">Person 1</div>
+                        </div>
+                        <div class="image-item">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=150&fit=crop" 
+                                 alt="Person 2">
+                            <div class="image-item-label">Person 2</div>
+                        </div>
+                        <div class="image-item">
+                            <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=150&fit=crop" 
+                                 alt="Person 3">
+                            <div class="image-item-label">Person 3</div>
+                        </div>
+                        <div class="image-item">
+                            <img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=200&h=150&fit=crop" 
+                                 alt="Person 4">
+                            <div class="image-item-label">Person 4</div>
+                        </div>
+                        <div class="image-item">
+                            <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=150&fit=crop" 
+                                 alt="Person 5">
+                            <div class="image-item-label">Person 5</div>
+                        </div>
+                        <div class="image-item">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=150&fit=crop" 
+                                 alt="Person 6">
+                            <div class="image-item-label">Person 6</div>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-top: 30px; margin-bottom: 15px; color: #666;">Interactive Elements</h3>
+                    <div class="grid-items">
+                        <div class="grid-item">
+                            <div class="grid-item-icon">🔘</div>
+                            <div class="grid-item-text">Button</div>
+                        </div>
+                        <div class="grid-item">
+                            <div class="grid-item-icon">📋</div>
+                            <div class="grid-item-text">Checkbox</div>
+                        </div>
+                        <div class="grid-item">
+                            <div class="grid-item-icon">◯</div>
+                            <div class="grid-item-text">Radio</div>
+                        </div>
+                        <div class="grid-item">
+                            <div class="grid-item-icon">🔗</div>
+                            <div class="grid-item-text">Link</div>
+                        </div>
+                        <div class="grid-item">
+                            <div class="grid-item-icon">📝</div>
+                            <div class="grid-item-text">Input</div>
+                        </div>
+                        <div class="grid-item">
+                            <div class="grid-item-icon">▼</div>
+                            <div class="grid-item-text">Dropdown</div>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-top: 30px; margin-bottom: 15px; color: #666;">Checkboxes & Radios</h3>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" checked> Enable notifications
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox"> Enable analytics
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="radio" name="option" checked> Option 1
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="radio" name="option"> Option 2
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label for="select">Dropdown Select</label>
+                        <select id="select">
+                            <option>Choose an option</option>
+                            <option selected>Option A</option>
+                            <option>Option B</option>
+                            <option>Option C</option>
+                        </select>
+                    </div>
+
+                    <div class="button-group" style="margin-top: 20px;">
+                        <button class="btn-primary">Primary Action</button>
+                        <button class="btn-secondary">Secondary Action</button>
+                        <button class="btn-success">Confirm</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content" style="margin-top: 20px;">
+            <div class="section">
+                <h2>📸 Screenshot Instructions</h2>
+                <div class="success-box">
+                    <strong>✓ Ready to test:</strong> Open Aegis side panel and take a screenshot
+                </div>
+                <ol style="line-height: 1.8; color: #666;">
+                    <li>Fill out the forms with sample data (pre-filled)</li>
+                    <li>Make sure you can see the images with faces</li>
+                    <li>Open the Aegis extension side panel</li>
+                    <li>Click "Take Screenshot" in the side panel</li>
+                    <li>Check the annotation:
+                        <ul style="margin-top: 10px; margin-left: 20px;">
+                            <li>✓ Form fields should be masked (blacked out)</li>
+                            <li>✓ Faces in images should be masked</li>
+                            <li>✓ Interactive elements should have [id] labels</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+
+            <div class="section">
+                <h2>🧪 Test Checklist</h2>
+                <div class="test-status">
+                    <div class="test-item">
+                        <div class="test-status-icon ready">✓</div>
+                        <div>
+                            <strong>Face Detection</strong>
+                            <p style="font-size: 0.85em; color: #999; margin-top: 2px;">YuNet model loaded and inference ready</p>
+                        </div>
+                    </div>
+                    <div class="test-item">
+                        <div class="test-status-icon ready">✓</div>
+                        <div>
+                            <strong>PII Field Detection</strong>
+                            <p style="font-size: 0.85em; color: #999; margin-top: 2px;">Password, email, phone fields detected</p>
+                        </div>
+                    </div>
+                    <div class="test-item">
+                        <div class="test-status-icon ready">✓</div>
+                        <div>
+                            <strong>Annotation Pipeline</strong>
+                            <p style="font-size: 0.85em; color: #999; margin-top: 2px;">Element labeling and masking active</p>
+                        </div>
+                    </div>
+                    <div class="test-item">
+                        <div class="test-status-icon ready">✓</div>
+                        <div>
+                            <strong>Ollama Integration</strong>
+                            <p style="font-size: 0.85em; color: #999; margin-top: 2px;">Model inference working locally</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>🛡️ Aegis Privacy Extension - Test Page v1.0</p>
+            <p style="font-size: 0.9em; margin-top: 10px; color: #999;">Open browser DevTools Console (F12) to see debug logs</p>
+        </div>
+    </div>
+
+    <script>
+        console.log('[Test Page] Aegis test suite loaded');
+        console.log('[Test Page] Form fields with PII:');
+        console.log('  - Email:', document.getElementById('email').value);
+        console.log('  - Phone:', document.getElementById('phone').value);
+        console.log('  - Password:', '***REDACTED***');
+        console.log('  - Credit Card:', document.getElementById('cc').value);
+        console.log('[Test Page] Face detection test images loaded from Unsplash');
+        console.log('[Test Page] Ready for Aegis screenshot testing');
+    </script>
+</body>
+</html>

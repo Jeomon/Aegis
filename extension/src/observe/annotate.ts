@@ -9,7 +9,7 @@
  * resolution — a HiDPI capture is 2× larger for no extra information and costs double the
  * image tokens.
  */
-
+import { detectFaces } from './redact/face-detector'
 import type { Bounds, InteractiveElement } from '../shared/types'
 import { maskRegions, sensitiveRegions } from './redact/pixels'
 
@@ -51,6 +51,7 @@ export async function annotateScreenshot(
 ): Promise<AnnotatedCapture> {
   const blob = await (await fetch(captureDataUrl)).blob()
   const bitmap = await createImageBitmap(blob)
+  console.log('[Aegis] Screenshot reached face detector')
 
   // Draw at CSS-viewport resolution: same information, half the tokens on a Retina panel.
   const scale =
@@ -67,15 +68,34 @@ export async function annotateScreenshot(
   ctx.drawImage(bitmap, 0, 0, width, height)
   bitmap.close()
 
+  const detectedFaces = await detectFaces(canvas, width, height)
+
   // Element bounds are CSS pixels; the drawn image is the capture scaled to CSS width.
   const factor = options.devicePixelRatio * scale
+
+  // Faces were measured on the drawn image, so divide out the conversion the masker is
+  // about to apply — otherwise every box is scaled twice on a HiDPI capture.
+  const faceRegions: Bounds[] = detectedFaces.map((face) => ({
+    x: face.x / factor,
+    y: face.y / factor,
+    width: face.width / factor,
+    height: face.height / factor,
+    documentX: face.documentX / factor,
+    documentY: face.documentY / factor,
+  }))
+
+  const regionsToMask: Bounds[] = [
+    ...sensitiveRegions(elements),
+    ...(options.piiRegions ?? []),
+    ...faceRegions,
+  ]
 
   // Masks go down before labels, in the same pass and the same coordinate space. Before,
   // so a label is never painted out by the mask beside it; the same pass, so there is no
   // second encode and no chance of the two disagreeing about where an element sits.
   const masked = maskRegions(
     ctx,
-    [...sensitiveRegions(elements), ...(options.piiRegions ?? [])],
+    regionsToMask,
     factor,
     width,
     height,

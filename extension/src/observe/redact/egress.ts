@@ -161,14 +161,21 @@ export function installEgressGuard(): void {
   globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = input instanceof Request ? input.url : String(input)
 
-    let host: string
+    let target: URL
     try {
-      host = new URL(url, location.href).host
+      target = new URL(url, location.href)
     } catch {
       const entry = { at: Date.now(), host: url, bytes: 0, allowed: false, reason: 'Unparseable URL.' }
       record(entry)
       throw new EgressBlocked(entry.reason, entry)
     }
+
+    // A data: or blob: URL carries its own bytes and resolves in-process, so reading one
+    // reaches no network and has no host to authorise. Reading the screenshot back out of
+    // the capture's data URL is the case that matters.
+    if (target.protocol === 'data:' || target.protocol === 'blob:') return original(input, init)
+
+    const host = target.host
 
     // Local requests are the extension loading its own assets, not egress.
     if (host === location.host) return original(input, init)
