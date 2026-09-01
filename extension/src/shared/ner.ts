@@ -52,7 +52,18 @@ const ACCEPTED: Record<string, SensitiveKind> = {
   LOC: 'street-address',
 }
 
-const MIN_SCORE = 0.6
+/**
+ * Deliberately high, and measured rather than chosen.
+ *
+ * On this model a real entity comes back at 0.99–1.00 — "Ravi Menon" scored 1.00, "Kochi"
+ * 0.99 — while the word "Decoys" in a section heading scored 0.75 and was masked on screen.
+ * There is a wide gap between the two, so the floor sits in it.
+ *
+ * Recall on names is the thing to trade away here. A missed name is a gap we already
+ * declare; a black rectangle over an ordinary word costs precision, which is scored, and
+ * destroys the context the server is being asked to read, which is scored separately.
+ */
+const MIN_SCORE = 0.9
 const MIN_LENGTH = 3
 
 type Token = { entity: string; word: string; score: number }

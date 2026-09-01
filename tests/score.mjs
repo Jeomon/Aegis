@@ -175,8 +175,17 @@ server.listen(0, '127.0.0.1', () => {
     clearTimeout(timer)
     chrome.kill()
     server.close()
-    rmSync(work, { recursive: true, force: true })
-    report(result)
+
+    // Report first. Chrome flushes its profile asynchronously after being killed, so
+    // removing the directory can fail with ENOTEMPTY — and losing the measurement to a
+    // cleanup race is the wrong way round.
+    report(result, () => {
+      try {
+        rmSync(work, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 })
+      } catch {
+        // A leftover temp directory is the operating system's problem, not the run's.
+      }
+    })
   })
 })
 
@@ -184,9 +193,10 @@ server.listen(0, '127.0.0.1', () => {
 const intersects = (r, t) =>
   r.x < t.x + t.w && r.x + r.width > t.x && r.y < t.y + t.h && r.y + r.height > t.y
 
-function report(result) {
+function report(result, cleanup = () => {}) {
   if (result.error) {
     console.error(`\n  scoring failed: ${result.error}\n`)
+    cleanup()
     process.exit(1)
   }
 
@@ -207,8 +217,26 @@ function report(result) {
     `\n  corpus: ${positives.length} identifiers, ${decoys.length} decoys, ` +
       `${scan.piiRegions.length} regions painted\n`,
   )
+  // A region that explains nothing: it touches neither a marked span nor a field layer 1
+  // classified. Field masks are legitimate and carry their truth in the field's attributes
+  // rather than in a span, so they are excluded — otherwise this number is just a count of
+  // the form.
+  //
+  // What is left is a mask over ordinary words. It never moves precision, because precision
+  // only counts marked decoys, yet it is exactly as wrong: it costs the context the server
+  // is being asked to read. An over-confident model layer is what produces it.
+  const fields = scan.elements.filter((e) => e.sensitive).map((e) => e.bounds)
+  const overlapsField = (r) =>
+    fields.some((b) => r.x < b.x + b.width && r.x + r.width > b.x &&
+                       r.y < b.y + b.height && r.y + r.height > b.y)
+
+  const unexplained = scan.piiRegions.filter(
+    (r) => !truth.some((t) => intersects(r, t)) && !overlapsField(r),
+  )
+
   console.log(`  RECALL     ${recall.toFixed(1)}%   (${found.length}/${positives.length} covered)`)
   console.log(`  PRECISION  ${precision.toFixed(1)}%   (${wrong.length} decoys wrongly covered)`)
+  console.log(`  UNEXPLAINED ${String(unexplained.length).padStart(2)}      (masks touching no marked span)`)
 
   if (missed.length) {
     console.log('\n  missed:')
@@ -225,6 +253,8 @@ function report(result) {
     console.log(`    [${e.id}] ${JSON.stringify(e.name).slice(0, 26).padEnd(28)} -> ${e.sensitive}`)
   }
   console.log()
+
+  cleanup()
 
   // Only a false positive fails the run. A miss is a known gap, recorded in score.md.
   process.exit(wrong.length ? 1 : 0)
