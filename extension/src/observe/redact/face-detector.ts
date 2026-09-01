@@ -4,8 +4,21 @@ import * as ort from 'onnxruntime-web/wasm'
 import type { Bounds } from '../../shared/types'
 
 const MODEL_PATH = 'models/face_detection_yunet_2023mar.onnx'
-const MODEL_INPUT_SIZE = 416
+
+/** Fixed in the graph, not a preference: ORT rejects any other input dimension outright. */
+const MODEL_INPUT_SIZE = 640
+
+/**
+ * YuNet has three detection heads, one per stride, each over its own anchor grid: a
+ * 640×640 input gives 80×80 anchors at stride 8, 40×40 at 16 and 20×20 at 32. Small faces
+ * are found by the fine grid, large ones by the coarse.
+ */
+const STRIDES = [8, 16, 32] as const
+
 const CONFIDENCE_THRESHOLD = 0.5
+
+/** Above this overlap two boxes are one face seen by two strides, not two faces. */
+const NMS_IOU = 0.3
 
 // ORT ships its WASM binary + JS glue as separate files. In an MV3 extension the default
 // CDN fallback is blocked, and side panels have no cross-origin isolation so
@@ -20,59 +33,46 @@ export async function loadFaceDetector(): Promise<ort.InferenceSession> {
     return session
   }
 
-  const modelUrl = chrome.runtime.getURL(MODEL_PATH)
-
-  console.log('[Aegis] Loading YuNet:', modelUrl)
-
-  session = await ort.InferenceSession.create(modelUrl, {
+  session = await ort.InferenceSession.create(chrome.runtime.getURL(MODEL_PATH), {
     executionProviders: ['wasm'],
   })
 
-  console.log('[Aegis] YuNet loaded')
-  console.log('[Aegis] Inputs:', session.inputNames)
-  console.log('[Aegis] Outputs:', session.outputNames)
-
   return session
+}
+
+interface Detection {
+  bounds: Bounds
+  score: number
 }
 
 /**
  * Detect faces in a canvas image.
  *
- * Runs YuNet inference on the image and returns bounding boxes for detected faces.
- * Returns normalized coordinates relative to the original image size.
+ * Returns boxes in the canvas's own pixel space — the caller knows how that relates to CSS
+ * pixels and converts, rather than this module guessing at a scale it was never told.
  */
-export async function detectFaces(canvas: OffscreenCanvas, width: number, height: number): Promise<Bounds[]> {
+export async function detectFaces(
+  canvas: OffscreenCanvas,
+  width: number,
+  height: number,
+): Promise<Bounds[]> {
   try {
     const session = await loadFaceDetector()
-    if (!session) return []
 
-    // Get canvas context and image data
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return []
+    // Letterbox rather than stretch. A viewport is far wider than it is tall, and squeezing
+    // it into a square turns every face into an ellipse the model was never trained on.
+    const ratio = Math.min(MODEL_INPUT_SIZE / width, MODEL_INPUT_SIZE / height)
 
-    // Create a temporary canvas for model input (MODEL_INPUT_SIZE x MODEL_INPUT_SIZE)
     const modelCanvas = new OffscreenCanvas(MODEL_INPUT_SIZE, MODEL_INPUT_SIZE)
     const modelCtx = modelCanvas.getContext('2d')
     if (!modelCtx) return []
 
-    // Draw and resize image to model input size
-    modelCtx.drawImage(canvas, 0, 0, MODEL_INPUT_SIZE, MODEL_INPUT_SIZE)
+    // A fresh canvas is transparent black, so the unused margin reads as (0, 0, 0) padding.
+    modelCtx.drawImage(canvas, 0, 0, Math.round(width * ratio), Math.round(height * ratio))
     const imageData = modelCtx.getImageData(0, 0, MODEL_INPUT_SIZE, MODEL_INPUT_SIZE)
 
-    // Preprocess: convert to tensor and normalize
-    const inputTensor = preprocessImage(imageData.data, MODEL_INPUT_SIZE)
-
-    // Run inference
-    const feeds = {
-      input: inputTensor,
-    }
-
-    const outputData = await session.run(feeds)
-    const outputKey = session.outputNames[0]
-    const rawOutput = outputData[outputKey] as any
-
-    // Parse detections
-    const faces = parseDetections(rawOutput, width, height)
+    const outputs = await session.run({ input: preprocessImage(imageData.data) })
+    const faces = suppressOverlaps(decodeDetections(outputs, ratio))
 
     console.log('[Aegis] Detected faces:', faces.length)
     return faces
@@ -83,84 +83,99 @@ export async function detectFaces(canvas: OffscreenCanvas, width: number, height
 }
 
 /**
- * Preprocess image data for YuNet model.
+ * Preprocess image data for YuNet.
  *
- * Converts RGBA to BGR and normalizes to [0, 1].
+ * Planar NCHW in BGR order, and raw 0-255 values: the model was trained on OpenCV's
+ * unscaled BGR input, so dividing by 255 here shifts every activation and costs most of
+ * the detections rather than merely dimming them.
  */
-function preprocessImage(imageData: Uint8ClampedArray, size: number): ort.Tensor {
-  // Create float32 array for model input (BGR format, normalized)
-  const float32Data = new Float32Array(size * size * 3)
+function preprocessImage(pixels: Uint8ClampedArray): ort.Tensor {
+  const plane = MODEL_INPUT_SIZE * MODEL_INPUT_SIZE
+  const data = new Float32Array(plane * 3)
 
-  for (let i = 0; i < size * size; i++) {
-    // RGBA -> BGR with normalization
-    const r = imageData[i * 4] / 255.0
-    const g = imageData[i * 4 + 1] / 255.0
-    const b = imageData[i * 4 + 2] / 255.0
-
-    // BGR order
-    float32Data[i * 3] = b
-    float32Data[i * 3 + 1] = g
-    float32Data[i * 3 + 2] = r
+  for (let i = 0; i < plane; i++) {
+    data[i] = pixels[i * 4 + 2]
+    data[plane + i] = pixels[i * 4 + 1]
+    data[plane * 2 + i] = pixels[i * 4]
   }
 
-  return new ort.Tensor('float32', float32Data, [1, 3, size, size])
+  return new ort.Tensor('float32', data, [1, 3, MODEL_INPUT_SIZE, MODEL_INPUT_SIZE])
 }
 
 /**
- * Parse YuNet model output into face bounding boxes.
+ * Turn the three heads into boxes, in the coordinates of the image that was handed in.
  *
- * YuNet outputs: [x, y, w, h, confidence, ...]
- * Map back to original image coordinates.
+ * Each anchor carries a classification score, an objectness score, an offset within its
+ * cell and a log-space size. Nothing here is a single flat list of rectangles, which is
+ * why reading one output tensor as `[x, y, w, h, score]` produces noise.
  */
-function parseDetections(output: any, originalWidth: number, originalHeight: number): Bounds[] {
-  const faces: Bounds[] = []
+function decodeDetections(outputs: ort.InferenceSession.OnnxValueMapType, ratio: number): Detection[] {
+  const found: Detection[] = []
 
-  try {
-    const rawOutput = output
-    const data = output?.data ?? output
+  for (const stride of STRIDES) {
+    const cls = outputs[`cls_${stride}`].data as Float32Array
+    const obj = outputs[`obj_${stride}`].data as Float32Array
+    const bbox = outputs[`bbox_${stride}`].data as Float32Array
+    const cols = MODEL_INPUT_SIZE / stride
 
-    console.log('[Aegis] Raw YuNet output:', rawOutput)
-    console.log('[Aegis] Parsed data:', data)
-    console.log('[Aegis] Output type:', typeof data, 'length:', data?.length)
+    for (let i = 0; i < cls.length; i++) {
+      // Two heads, one decision — the geometric mean, as OpenCV's own YuNet post-processing
+      // does it: an anchor must both look like a face and hold an object.
+      const score = Math.sqrt(clamp01(cls[i]) * clamp01(obj[i]))
+      if (score < CONFIDENCE_THRESHOLD) continue
 
-    if (!data || data.length === 0) {
-      console.log('[Aegis] No data returned from YuNet')
-      return []
-    }
+      const centreX = ((i % cols) + bbox[i * 4]) * stride
+      const centreY = (Math.floor(i / cols) + bbox[i * 4 + 1]) * stride
+      const boxWidth = Math.exp(bbox[i * 4 + 2]) * stride
+      const boxHeight = Math.exp(bbox[i * 4 + 3]) * stride
 
-    const scale_x = originalWidth / MODEL_INPUT_SIZE
-    const scale_y = originalHeight / MODEL_INPUT_SIZE
+      // Out of the letterbox, back into the caller's pixels.
+      const x = (centreX - boxWidth / 2) / ratio
+      const y = (centreY - boxHeight / 2) / ratio
 
-    console.log('[Aegis] Data length:', data.length)
-    console.log('[Aegis] First 20 values:', Array.from(data.slice(0, 20)))
-
-    for (let i = 0; i < data.length; i += 6) {
-      const confidence = data[i + 4]
-      console.log(`[Aegis] Checking block at index ${i}: confidence=${confidence}`)
-
-      if (confidence < CONFIDENCE_THRESHOLD) continue
-
-      const x = data[i] * scale_x
-      const y = data[i + 1] * scale_y
-      const w = data[i + 2] * scale_x
-      const h = data[i + 3] * scale_y
-
-      console.log('[Aegis] Face candidate found:', { x, y, w, h, confidence })
-
-      faces.push({
-        x: Math.max(0, x),
-        y: Math.max(0, y),
-        width: Math.max(0, w),
-        height: Math.max(0, h),
-        documentX: Math.max(0, x),
-        documentY: Math.max(0, y),
+      found.push({
+        score,
+        // A face belongs to no element and is never scrolled to, so the document
+        // coordinates exist only to satisfy the shape the masker consumes.
+        bounds: {
+          x,
+          y,
+          width: boxWidth / ratio,
+          height: boxHeight / ratio,
+          documentX: x,
+          documentY: y,
+        },
       })
     }
-
-    console.log('[Aegis] Final face count:', faces.length)
-  } catch (err) {
-    console.error('[Aegis] Error parsing detections:', err)
   }
 
-  return faces
+  return found
+}
+
+/** Keep the highest-scoring box of each overlapping cluster. */
+function suppressOverlaps(detections: Detection[]): Bounds[] {
+  const kept: Detection[] = []
+
+  for (const candidate of detections.sort((a, b) => b.score - a.score)) {
+    if (kept.some((face) => iou(face.bounds, candidate.bounds) > NMS_IOU)) continue
+    kept.push(candidate)
+  }
+
+  return kept.map((face) => face.bounds)
+}
+
+function iou(a: Bounds, b: Bounds): number {
+  const left = Math.max(a.x, b.x)
+  const top = Math.max(a.y, b.y)
+  const right = Math.min(a.x + a.width, b.x + b.width)
+  const bottom = Math.min(a.y + a.height, b.y + b.height)
+
+  const overlap = Math.max(0, right - left) * Math.max(0, bottom - top)
+  if (!overlap) return 0
+
+  return overlap / (a.width * a.height + b.width * b.height - overlap)
+}
+
+function clamp01(value: number): number {
+  return Math.min(1, Math.max(0, value))
 }

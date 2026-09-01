@@ -68,19 +68,26 @@ export async function annotateScreenshot(
   ctx.drawImage(bitmap, 0, 0, width, height)
   bitmap.close()
 
-  // Detect faces in the screenshot
-  console.log('[Aegis] Running face detection...')
   const detectedFaces = await detectFaces(canvas, width, height)
-  console.log('[Aegis] Face detection finished')
 
   // Element bounds are CSS pixels; the drawn image is the capture scaled to CSS width.
   const factor = options.devicePixelRatio * scale
 
-  // Combine sensitive regions + detected faces for masking
+  // Faces were measured on the drawn image, so divide out the conversion the masker is
+  // about to apply — otherwise every box is scaled twice on a HiDPI capture.
+  const faceRegions: Bounds[] = detectedFaces.map((face) => ({
+    x: face.x / factor,
+    y: face.y / factor,
+    width: face.width / factor,
+    height: face.height / factor,
+    documentX: face.documentX / factor,
+    documentY: face.documentY / factor,
+  }))
+
   const regionsToMask: Bounds[] = [
     ...sensitiveRegions(elements),
     ...(options.piiRegions ?? []),
-    ...detectedFaces, // Add detected faces
+    ...faceRegions,
   ]
 
   // Masks go down before labels, in the same pass and the same coordinate space. Before,
