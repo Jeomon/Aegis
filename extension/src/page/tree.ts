@@ -12,6 +12,8 @@
 
 import { parentOf } from './scan'
 import type { InteractiveElement, TreeNode } from '../shared/types'
+import { redactText } from '../shared/detect'
+import { conceal } from './vault'
 
 const MAX_LINES = 150
 
@@ -22,15 +24,23 @@ const STRUCTURAL_CONTAINER_TAGS: ReadonlySet<string> = new Set([
   'table', 'thead', 'tbody', 'tfoot', 'tr',
 ])
 
+/**
+ * A container's label, redacted like any other text.
+ *
+ * aria-labelledby is the reason this matters: it pulls another element's textContent into
+ * the tree, so ordinary page prose — which the tree otherwise never carries — arrives here
+ * by reference. A heading reading "Account 2345 6789 0124" would land in the observation
+ * through a nav that merely points at it.
+ */
 function containerName(el: Element): string {
   const label = el.getAttribute('aria-label')?.trim()
-  if (label) return label.replace(/\s+/g, ' ').slice(0, 60)
+  if (label) return redactText(label.replace(/\s+/g, ' ').slice(0, 60), conceal).text
 
   const labelledBy = el.getAttribute('aria-labelledby')
   if (labelledBy) {
     const target = document.getElementById(labelledBy.split(/\s+/)[0])
     const text = target?.textContent?.replace(/\s+/g, ' ').trim()
-    if (text) return text.slice(0, 60)
+    if (text) return redactText(text.slice(0, 60), conceal).text
   }
   return ''
 }
