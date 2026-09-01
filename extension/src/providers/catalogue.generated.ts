@@ -8,7 +8,9 @@
  * `thinkingLevels` comes from Tau's per-model research. A model carrying 'off' can have
  * reasoning disabled, which is the difference between a 2-second and an 8-second turn.
  *
- * Regenerate rather than edit by hand.
+ * Regenerate rather than edit by hand. Entries a provider no longer serves are pruned
+ * against its live /v1/models on 1 September 2026 — Tau's catalogue is a snapshot, and a
+ * model that has been retired since is a request that fails only once the user picks it.
  */
 
 import type { ModelConfig } from './registry'
@@ -40,14 +42,13 @@ export const CATALOGUE: readonly ModelConfig[] = [
   { provider: "anthropic", id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", tools: true, input: ["text", "image", "file"], output: ["text"], thinkingLevels: ["off", "low", "medium", "high", "max"], thinkingFormat: "anthropic", context: 1048576 },
   { provider: "anthropic", id: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5", tools: true, input: ["text", "image", "file"], output: ["text"], thinkingLevels: ["off", "minimal", "low", "medium", "high", "xhigh", "max"], thinkingFormat: "anthropic", context: 200000 },
 
-  // ---- nvidia (15) --------------------------------------------------
+  // ---- nvidia (14) --------------------------------------------------
   { provider: "nvidia", id: "nvidia/nemotron-3.5-lightning-30b-a3b", label: "Nemotron 3.5 Lightning 30B", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["off", "high"], thinkingFormat: "chat-template", context: 1000000 },
   { provider: "nvidia", id: "meta/muse-glimmer-30b", label: "Muse Glimmer 30B", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["low", "medium", "high", "xhigh"], context: 131072 },
   { provider: "nvidia", id: "poolside/laguna-xs-2.1", label: "Laguna XS 2.1", tools: true, input: ["text"], output: ["text"], context: 262144 },
   { provider: "nvidia", id: "minimaxai/minimax-m3", label: "MiniMax M3", tools: true, input: ["text", "image", "video"], output: ["text"], context: 1000000 },
   { provider: "nvidia", id: "google/diffusiongemma-26b-a4b-it", label: "DiffusionGemma 26B A4B IT", tools: true, input: ["text", "image", "video"], output: ["text"], thinkingLevels: ["off", "high"], thinkingFormat: "chat-template", context: 262144 },
   { provider: "nvidia", id: "nvidia/nemotron-3-ultra-550b-a55b", label: "Nemotron 3 Ultra 550B", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["off", "medium", "high"], context: 1000000 },
-  { provider: "nvidia", id: "stepfun-ai/step-3.7-flash", label: "Step 3.7 Flash", tools: true, input: ["text", "image"], output: ["text"], context: 256000 },
   { provider: "nvidia", id: "openai/gpt-oss-120b", label: "GPT-OSS 120B", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["low", "medium", "high"], context: 128000 },
   { provider: "nvidia", id: "openai/gpt-oss-20b", label: "GPT-OSS 20B", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["low", "medium", "high"], context: 128000 },
   { provider: "nvidia", id: "deepseek-ai/deepseek-v4-pro-0813", label: "DeepSeek V4 Pro", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["off", "high", "max"], context: 1000000 },
@@ -57,7 +58,7 @@ export const CATALOGUE: readonly ModelConfig[] = [
   { provider: "nvidia", id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", label: "Nemotron 3 Nano Omni", tools: true, input: ["text", "image", "video"], output: ["text"], thinkingLevels: ["off", "high"], context: 131072 },
   { provider: "nvidia", id: "nvidia/nemotron-3-super-120b-a12b", label: "Nemotron 3 Super 120B", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["off", "medium", "high"], context: 262144 },
 
-  // ---- openrouter (249) ----------------------------------------------
+  // ---- openrouter (237) ----------------------------------------------
   { provider: "openrouter", id: "dots-studio/dots-3-note-preview:free", label: "Dots Studio: Dots3-Note Preview (free)", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "high"], thinkingFormat: "openrouter", context: 512000 },
   { provider: "openrouter", id: "google/gemini-3.7-flash", label: "Google: Gemini 3.7 Flash", tools: true, input: ["text", "image", "audio", "video"], output: ["text"], thinkingLevels: ["low", "medium", "high"], thinkingFormat: "openrouter", context: 1048576 },
   { provider: "openrouter", id: "bytedance-seed/seed-2-1-turbo", label: "ByteDance Seed: Seed 2.1 Turbo", tools: true, input: ["text", "image", "video"], output: ["text"], thinkingLevels: ["off", "high"], thinkingFormat: "openrouter", context: 262144 },
@@ -72,7 +73,6 @@ export const CATALOGUE: readonly ModelConfig[] = [
   { provider: "openrouter", id: "qwen/qwen3.8-max", label: "Qwen: Qwen3.8 Max", tools: true, input: ["text", "image", "video"], output: ["text"], thinkingLevels: ["minimal", "low", "medium", "high", "xhigh"], thinkingFormat: "openrouter", context: 1000000 },
   { provider: "openrouter", id: "deepseek/deepseek-v4-flash-0731", label: "DeepSeek: DeepSeek V4 Flash 0731", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["off", "low", "high", "max"], thinkingFormat: "openrouter", context: 1310720 },
   { provider: "openrouter", id: "thinkingmachines/inkling-small", label: "Thinking Machines: Inkling Small", tools: true, input: ["text", "image", "audio"], output: ["text"], thinkingLevels: ["off", "minimal", "low", "medium", "high", "max"], thinkingFormat: "openrouter", context: 524288 },
-  { provider: "openrouter", id: "anthropic/claude-opus-5-fast", label: "Claude Opus 5 (Fast)", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "low", "medium", "high", "xhigh", "max"], thinkingFormat: "openrouter", context: 1000000 },
   { provider: "openrouter", id: "anthropic/claude-opus-5", label: "Claude Opus 5", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "low", "medium", "high", "xhigh", "max"], thinkingFormat: "openrouter", context: 1000000 },
   { provider: "openrouter", id: "google/gemini-3.6-flash", label: "Google: Gemini 3.6 Flash", tools: true, input: ["text", "image", "audio", "video"], output: ["text"], thinkingLevels: ["minimal", "low", "medium", "high"], thinkingFormat: "openrouter", context: 1048576 },
   { provider: "openrouter", id: "thinkingmachines/inkling", label: "Thinking Machines: Inkling", tools: true, input: ["text", "image", "audio"], output: ["text"], thinkingLevels: ["off", "minimal", "low", "medium", "high", "max"], thinkingFormat: "openrouter", context: 1048576 },
@@ -88,8 +88,6 @@ export const CATALOGUE: readonly ModelConfig[] = [
   { provider: "openrouter", id: "qwen/qwen3.7-max", label: "Qwen: Qwen3.7 Max", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["off", "high"], thinkingFormat: "openrouter", context: 1000000 },
   { provider: "openrouter", id: "x-ai/grok-build-0.1", label: "xAI: Grok Build 0.1", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["low", "medium", "high"], thinkingFormat: "openrouter", context: 256000 },
   { provider: "openrouter", id: "google/gemini-3.5-flash", label: "Google: Gemini 3.5 Flash", tools: true, input: ["text", "image", "audio", "video"], output: ["text"], thinkingLevels: ["minimal", "low", "medium", "high"], thinkingFormat: "openrouter", context: 1048576 },
-  { provider: "openrouter", id: "anthropic/claude-opus-4.7-fast", label: "Anthropic: Claude Opus 4.7 (Fast)", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "low", "medium", "high", "xhigh", "max"], thinkingFormat: "openrouter", context: 1000000 },
-  { provider: "openrouter", id: "inclusionai/ring-2.6-1t", label: "inclusionAI: Ring-2.6-1T", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["minimal", "low", "medium", "high", "xhigh", "max"], thinkingFormat: "openrouter", context: 262144 },
   { provider: "openrouter", id: "google/gemini-3.1-flash-lite", label: "Google: Gemini 3.1 Flash Lite", tools: true, input: ["text", "image", "audio", "video"], output: ["text"], thinkingLevels: ["minimal", "low", "medium", "high"], thinkingFormat: "openrouter", context: 1048576 },
   { provider: "openrouter", id: "openai/gpt-chat-latest", label: "OpenAI: GPT Chat Latest", tools: true, input: ["text", "image"], output: ["text"], thinkingFormat: "openrouter", context: 400000 },
   { provider: "openrouter", id: "x-ai/grok-4.3", label: "xAI: Grok 4.3", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "low", "medium", "high"], thinkingFormat: "openrouter", context: 1000000 },
@@ -112,11 +110,9 @@ export const CATALOGUE: readonly ModelConfig[] = [
   { provider: "openrouter", id: "openai/gpt-5.5", label: "OpenAI: GPT-5.5", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "low", "medium", "high", "xhigh"], thinkingFormat: "openrouter", context: 1050000 },
   { provider: "openrouter", id: "deepseek/deepseek-v4-pro", label: "DeepSeek: DeepSeek V4 Pro", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["off", "high", "max"], thinkingFormat: "openrouter", context: 1048576 },
   { provider: "openrouter", id: "deepseek/deepseek-v4-flash", label: "DeepSeek: DeepSeek V4 Flash", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["off", "high", "max"], thinkingFormat: "openrouter", context: 1000000 },
-  { provider: "openrouter", id: "inclusionai/ling-2.6-1t", label: "inclusionAI: Ling-2.6-1T", tools: true, input: ["text"], output: ["text"], thinkingFormat: "openrouter", context: 262144 },
   { provider: "openrouter", id: "tencent/hy3-preview", label: "Tencent: Hy3 preview", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["minimal", "low", "medium", "high", "xhigh", "max"], thinkingFormat: "openrouter", context: 262144 },
   { provider: "openrouter", id: "xiaomi/mimo-v2.5-pro", label: "Xiaomi: MiMo-V2.5-Pro", tools: true, input: ["text"], output: ["text"], thinkingFormat: "openrouter", context: 1048576 },
   { provider: "openrouter", id: "xiaomi/mimo-v2.5", label: "Xiaomi: MiMo-V2.5", tools: true, input: ["text", "image", "audio", "video"], output: ["text"], thinkingFormat: "openrouter", context: 1048576 },
-  { provider: "openrouter", id: "inclusionai/ling-2.6-flash", label: "inclusionAI: Ling-2.6-flash", tools: true, input: ["text"], output: ["text"], thinkingFormat: "openrouter", context: 262144 },
   { provider: "openrouter", id: "~anthropic/claude-opus-latest", label: "Anthropic: Claude Opus Latest", tools: true, input: ["text", "image"], output: ["text"], thinkingFormat: "openrouter", context: 1000000 },
   { provider: "openrouter", id: "moonshotai/kimi-k2.6", label: "MoonshotAI: Kimi K2.6", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "high"], thinkingFormat: "openrouter", context: 262142 },
   { provider: "openrouter", id: "anthropic/claude-opus-4.7", label: "Anthropic: Claude Opus 4.7", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "low", "medium", "high", "xhigh", "max"], thinkingFormat: "openrouter", context: 1000000 },
@@ -174,7 +170,6 @@ export const CATALOGUE: readonly ModelConfig[] = [
   { provider: "openrouter", id: "minimax/minimax-m2.1", label: "MiniMax: MiniMax M2.1", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["minimal", "low", "medium", "high", "xhigh", "max"], thinkingFormat: "openrouter", context: 196608 },
   { provider: "openrouter", id: "z-ai/glm-4.7", label: "Z.ai: GLM 4.7", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["off", "low", "medium", "high"], thinkingFormat: "openrouter", context: 202752 },
   { provider: "openrouter", id: "google/gemini-3-flash-preview", label: "Google: Gemini 3 Flash Preview", tools: true, input: ["text", "image", "audio", "video"], output: ["text"], thinkingLevels: ["minimal", "low", "medium", "high"], thinkingFormat: "openrouter", context: 1048576 },
-  { provider: "openrouter", id: "nvidia/nemotron-3-nano-30b-a3b:free", label: "NVIDIA: Nemotron 3 Nano 30B A3B (free)", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["off", "high"], thinkingFormat: "openrouter", context: 256000 },
   { provider: "openrouter", id: "nvidia/nemotron-3-nano-30b-a3b", label: "NVIDIA: Nemotron 3 Nano 30B A3B", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["off", "high"], thinkingFormat: "openrouter", context: 262144 },
   { provider: "openrouter", id: "openai/gpt-5.2-chat", label: "OpenAI: GPT-5.2 Chat", tools: true, input: ["text", "image"], output: ["text"], thinkingFormat: "openrouter", context: 128000 },
   { provider: "openrouter", id: "openai/gpt-5.2-pro", label: "OpenAI: GPT-5.2 Pro", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "low", "medium", "high", "xhigh"], thinkingFormat: "openrouter", context: 400000 },
@@ -196,7 +191,6 @@ export const CATALOGUE: readonly ModelConfig[] = [
   { provider: "openrouter", id: "amazon/nova-premier-v1", label: "Amazon: Nova Premier 1.0", tools: true, input: ["text", "image"], output: ["text"], thinkingFormat: "openrouter", context: 1000000 },
   { provider: "openrouter", id: "mistralai/voxtral-small-24b-2507", label: "Mistral: Voxtral Small 24B 2507", tools: true, input: ["text", "audio"], output: ["text"], thinkingFormat: "openrouter", context: 32000 },
   { provider: "openrouter", id: "openai/gpt-oss-safeguard-20b", label: "OpenAI: gpt-oss-safeguard-20b", tools: true, input: ["text"], output: ["text"], thinkingFormat: "openrouter", context: 131072 },
-  { provider: "openrouter", id: "nvidia/nemotron-nano-12b-v2-vl:free", label: "NVIDIA: Nemotron Nano 12B 2 VL (free)", tools: true, input: ["text", "image", "video"], output: ["text"], thinkingLevels: ["off", "high"], thinkingFormat: "openrouter", context: 128000 },
   { provider: "openrouter", id: "minimax/minimax-m2", label: "MiniMax: MiniMax M2", tools: true, input: ["text"], output: ["text"], thinkingFormat: "openrouter", context: 196608 },
   { provider: "openrouter", id: "qwen/qwen3-vl-32b-instruct", label: "Qwen: Qwen3 VL 32B Instruct", tools: true, input: ["text", "image"], output: ["text"], thinkingFormat: "openrouter", context: 131072 },
   { provider: "openrouter", id: "anthropic/claude-haiku-4.5", label: "Anthropic: Claude Haiku 4.5", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "minimal", "low", "medium", "high", "xhigh", "max"], thinkingFormat: "openrouter", context: 200000 },
@@ -216,20 +210,16 @@ export const CATALOGUE: readonly ModelConfig[] = [
   { provider: "openrouter", id: "qwen/qwen3-coder-flash", label: "Qwen: Qwen3 Coder Flash", tools: true, input: ["text"], output: ["text"], thinkingFormat: "openrouter", context: 1000000 },
   { provider: "openrouter", id: "qwen/qwen3-next-80b-a3b-thinking", label: "Qwen: Qwen3 Next 80B A3B Thinking", tools: true, input: ["text"], output: ["text"], thinkingFormat: "openrouter", context: 131072 },
   { provider: "openrouter", id: "qwen/qwen3-next-80b-a3b-instruct", label: "Qwen: Qwen3 Next 80B A3B Instruct", tools: true, input: ["text"], output: ["text"], thinkingFormat: "openrouter", context: 262144 },
-  { provider: "openrouter", id: "qwen/qwen-plus-2025-07-28:thinking", label: "Qwen: Qwen Plus 0728 (thinking)", tools: true, input: ["text"], output: ["text"], thinkingFormat: "openrouter", context: 1000000 },
   { provider: "openrouter", id: "qwen/qwen-plus-2025-07-28", label: "Qwen: Qwen Plus 0728", tools: true, input: ["text"], output: ["text"], thinkingFormat: "openrouter", context: 1000000 },
-  { provider: "openrouter", id: "nvidia/nemotron-nano-9b-v2:free", label: "NVIDIA: Nemotron Nano 9B V2 (free)", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["off", "high"], thinkingFormat: "openrouter", context: 128000 },
   { provider: "openrouter", id: "moonshotai/kimi-k2-0905", label: "MoonshotAI: Kimi K2 0905", tools: true, input: ["text"], output: ["text"], thinkingFormat: "openrouter", context: 262144 },
   { provider: "openrouter", id: "qwen/qwen3-30b-a3b-thinking-2507", label: "Qwen: Qwen3 30B A3B Thinking 2507", tools: true, input: ["text"], output: ["text"], thinkingFormat: "openrouter", context: 131072 },
   { provider: "openrouter", id: "deepseek/deepseek-chat-v3.1", label: "DeepSeek: DeepSeek V3.1", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["off", "high"], thinkingFormat: "openrouter", context: 163840 },
   { provider: "openrouter", id: "mistralai/mistral-medium-3.1", label: "Mistral: Mistral Medium 3.1", tools: true, input: ["text", "image"], output: ["text"], thinkingFormat: "openrouter", context: 131072 },
   { provider: "openrouter", id: "z-ai/glm-4.5v", label: "Z.ai: GLM 4.5V", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "high"], thinkingFormat: "openrouter", context: 65536 },
-  { provider: "openrouter", id: "ai21/jamba-large-1.7", label: "AI21: Jamba Large 1.7", tools: true, input: ["text"], output: ["text"], thinkingFormat: "openrouter", context: 256000 },
   { provider: "openrouter", id: "openai/gpt-5", label: "OpenAI: GPT-5", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "low", "medium", "high", "xhigh"], thinkingFormat: "openrouter", context: 400000 },
   { provider: "openrouter", id: "openai/gpt-5-mini", label: "OpenAI: GPT-5 Mini", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "low", "medium", "high", "xhigh"], thinkingFormat: "openrouter", context: 400000 },
   { provider: "openrouter", id: "openai/gpt-5-nano", label: "OpenAI: GPT-5 Nano", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "low", "medium", "high", "xhigh"], thinkingFormat: "openrouter", context: 400000 },
   { provider: "openrouter", id: "openai/gpt-oss-120b", label: "OpenAI: gpt-oss-120b", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["low", "medium", "high"], thinkingFormat: "openrouter", context: 131072 },
-  { provider: "openrouter", id: "openai/gpt-oss-20b:free", label: "OpenAI: gpt-oss-20b (free)", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["low", "medium", "high"], thinkingFormat: "openrouter", context: 131072 },
   { provider: "openrouter", id: "openai/gpt-oss-20b", label: "OpenAI: gpt-oss-20b", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["low", "medium", "high"], thinkingFormat: "openrouter", context: 131072 },
   { provider: "openrouter", id: "anthropic/claude-opus-4.1", label: "Anthropic: Claude Opus 4.1", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "minimal", "low", "medium", "high", "xhigh", "max"], thinkingFormat: "openrouter", context: 200000 },
   { provider: "openrouter", id: "mistralai/codestral-2508", label: "Mistral: Codestral 2508", tools: true, input: ["text"], output: ["text"], thinkingFormat: "openrouter", context: 256000 },
@@ -253,7 +243,6 @@ export const CATALOGUE: readonly ModelConfig[] = [
   { provider: "openrouter", id: "anthropic/claude-sonnet-4", label: "Anthropic: Claude Sonnet 4", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "minimal", "low", "medium", "high", "xhigh", "max"], thinkingFormat: "openrouter", context: 1000000 },
   { provider: "openrouter", id: "mistralai/mistral-medium-3", label: "Mistral: Mistral Medium 3", tools: true, input: ["text", "image"], output: ["text"], thinkingFormat: "openrouter", context: 131072 },
   { provider: "openrouter", id: "google/gemini-2.5-pro-preview-05-06", label: "Google: Gemini 2.5 Pro Preview 05-06", tools: true, input: ["text", "image", "audio", "video"], output: ["text"], thinkingFormat: "openrouter", context: 1048576 },
-  { provider: "openrouter", id: "arcee-ai/virtuoso-large", label: "Arcee AI: Virtuoso Large", tools: true, input: ["text"], output: ["text"], thinkingFormat: "openrouter", context: 131072 },
   { provider: "openrouter", id: "qwen/qwen3-30b-a3b", label: "Qwen: Qwen3 30B A3B", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["off", "high"], thinkingFormat: "openrouter", context: 40960 },
   { provider: "openrouter", id: "qwen/qwen3-8b", label: "Qwen: Qwen3 8B", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["off", "high"], thinkingFormat: "openrouter", context: 40960 },
   { provider: "openrouter", id: "qwen/qwen3-14b", label: "Qwen: Qwen3 14B", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["off", "high"], thinkingFormat: "openrouter", context: 40960 },
@@ -313,12 +302,10 @@ export const CATALOGUE: readonly ModelConfig[] = [
   { provider: "together", id: "moonshotai/Kimi-K2.5", label: "Kimi K2.5", tools: true, input: ["text", "image"], output: ["text"], context: 262144 },
   { provider: "together", id: "meta-llama/Llama-3.3-70B-Instruct-Turbo", label: "Llama 3.3 70B", tools: true, input: ["text"], output: ["text"], context: 131072 },
 
-  // ---- groq (6) ----------------------------------------------------
+  // ---- groq (4) ----------------------------------------------------
   { provider: "groq", id: "openai/gpt-oss-120b", label: "GPT-OSS 120B", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["low", "medium", "high"], context: 131072 },
   { provider: "groq", id: "openai/gpt-oss-20b", label: "GPT-OSS 20B", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["low", "medium", "high"], context: 131072 },
   { provider: "groq", id: "qwen/qwen3-32b", label: "Qwen3 32B", tools: true, input: ["text"], output: ["text"], context: 131072 },
-  { provider: "groq", id: "llama-3.3-70b-versatile", label: "Llama 3.3 70B", tools: true, input: ["text"], output: ["text"], context: 131072 },
-  { provider: "groq", id: "llama-3.1-8b-instant", label: "Llama 3.1 8B Instant", tools: true, input: ["text"], output: ["text"], context: 131072 },
   { provider: "groq", id: "meta-llama/llama-4-scout-17b-16e-instruct", label: "Llama 4 Scout 17Bx16E", tools: true, input: ["text", "image"], output: ["text"], context: 131072 },
 
   // ---- ollama (45) --------------------------------------------------
@@ -373,12 +360,9 @@ export const CATALOGUE: readonly ModelConfig[] = [
   { provider: "cerebras", id: "zai-glm-4.7", label: "Z.ai GLM 4.7", tools: true, input: ["text"], output: ["text"], thinkingLevels: ["off", "low", "medium", "high"], context: 131072 },
   { provider: "cerebras", id: "gemma-4-31b", label: "Gemma 4 31B", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "low", "medium", "high"], context: 131072 },
 
-  // ---- mistral (35) --------------------------------------------------
+  // ---- mistral (29) --------------------------------------------------
   { provider: "mistral", id: "codestral-2508", label: "codestral-2508", tools: true, input: ["text"], output: ["text"], context: 256000 },
   { provider: "mistral", id: "codestral-latest", label: "codestral-latest", tools: true, input: ["text"], output: ["text"], context: 256000 },
-  { provider: "mistral", id: "devstral-2512", label: "devstral-2512", tools: true, input: ["text"], output: ["text"], context: 262144 },
-  { provider: "mistral", id: "devstral-latest", label: "devstral-latest", tools: true, input: ["text"], output: ["text"], context: 262144 },
-  { provider: "mistral", id: "devstral-medium-latest", label: "devstral-medium-latest", tools: true, input: ["text"], output: ["text"], context: 262144 },
   { provider: "mistral", id: "labs-leanstral-1-5", label: "labs-leanstral-1-5", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "high"], context: 262144 },
   { provider: "mistral", id: "labs-leanstral-1-5-1", label: "labs-leanstral-1-5-1", tools: true, input: ["text", "image"], output: ["text"], context: 262144 },
   { provider: "mistral", id: "magistral-medium-latest", label: "magistral-medium-latest", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "high"], context: 262144 },
@@ -389,14 +373,11 @@ export const CATALOGUE: readonly ModelConfig[] = [
   { provider: "mistral", id: "ministral-3b-latest", label: "ministral-3b-latest", tools: true, input: ["text", "image"], output: ["text"], context: 131072 },
   { provider: "mistral", id: "ministral-8b-2512", label: "ministral-8b-2512", tools: true, input: ["text", "image"], output: ["text"], context: 262144 },
   { provider: "mistral", id: "ministral-8b-latest", label: "ministral-8b-latest", tools: true, input: ["text", "image"], output: ["text"], context: 262144 },
-  { provider: "mistral", id: "mistral-code-agent-latest", label: "mistral-code-agent-latest", tools: true, input: ["text"], output: ["text"], context: 262144 },
   { provider: "mistral", id: "mistral-code-fim-latest", label: "mistral-code-fim-latest", tools: true, input: ["text"], output: ["text"], context: 256000 },
   { provider: "mistral", id: "mistral-code-latest", label: "mistral-code-latest", tools: true, input: ["text"], output: ["text"], context: 256000 },
   { provider: "mistral", id: "mistral-large-2512", label: "mistral-large-2512", tools: true, input: ["text", "image"], output: ["text"], context: 262144 },
   { provider: "mistral", id: "mistral-large-latest", label: "mistral-large-latest", tools: true, input: ["text", "image"], output: ["text"], context: 262144 },
   { provider: "mistral", id: "mistral-medium", label: "mistral-medium", tools: true, input: ["text", "image"], output: ["text"], context: 262144 },
-  { provider: "mistral", id: "mistral-medium-2505", label: "mistral-medium-2505", tools: true, input: ["text", "image"], output: ["text"], context: 131072 },
-  { provider: "mistral", id: "mistral-medium-2508", label: "mistral-medium-2508", tools: true, input: ["text", "image"], output: ["text"], context: 131072 },
   { provider: "mistral", id: "mistral-medium-2604", label: "mistral-medium-2604", tools: true, input: ["text", "image"], output: ["text"], context: 262144 },
   { provider: "mistral", id: "mistral-medium-3", label: "mistral-medium-3", tools: true, input: ["text", "image"], output: ["text"], context: 262144 },
   { provider: "mistral", id: "mistral-medium-3-5", label: "mistral-medium-3-5", tools: true, input: ["text", "image"], output: ["text"], context: 262144 },
