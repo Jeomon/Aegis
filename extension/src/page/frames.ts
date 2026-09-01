@@ -125,7 +125,7 @@ interface Origin {
  * getBoundingClientRect() measures the border box, while the child's own origin sits inside
  * the border — so the border width is added rather than assumed to be zero.
  */
-function originOf(frame: HTMLIFrameElement): Origin {
+function originOf(frame: EmbeddedFrame): Origin {
   const rect = frame.getBoundingClientRect()
   const style = getComputedStyle(frame)
   return {
@@ -162,10 +162,18 @@ function translate(box: Bounds, origin: Origin): Bounds | undefined {
 // Collecting
 // ---------------------------------------------------------------------------------------
 
-/** Every iframe in this document, including those inside open shadow roots. */
-function* eachIframe(root: ParentNode): Generator<HTMLIFrameElement> {
+/**
+ * Every embedded document in this one, including inside open shadow roots.
+ *
+ * <frame> inside a <frameset> is a separate class from <iframe> and was invisible here. It
+ * is legacy markup, but it is exactly what the old automation-practice pages use — the
+ * ui.vision frames demo reported six frames and zero elements until this matched both.
+ */
+type EmbeddedFrame = HTMLIFrameElement | HTMLFrameElement
+
+function* eachIframe(root: ParentNode): Generator<EmbeddedFrame> {
   for (const el of root.querySelectorAll('*')) {
-    if (el instanceof HTMLIFrameElement) yield el
+    if (el instanceof HTMLIFrameElement || el instanceof HTMLFrameElement) yield el
     if (el.shadowRoot) yield* eachIframe(el.shadowRoot)
   }
 }
@@ -189,7 +197,7 @@ function sensitiveFieldRegions(): Bounds[] {
 }
 
 /** A label for the iframe node in the tree, without leaking a query string. */
-function frameLabel(frame: HTMLIFrameElement): string {
+function frameLabel(frame: EmbeddedFrame): string {
   const title = frame.getAttribute('title')?.trim()
   if (title) return title
   try {
@@ -221,12 +229,12 @@ export async function collectFrame(depth = 0): Promise<FramePayload> {
   if (!frames.length) return { elements, roots, regions, counts }
 
   const nonce = nonces()
-  const pending = new Map<Window, { frame: HTMLIFrameElement; index: number }>()
+  const pending = new Map<Window, { frame: EmbeddedFrame; index: number }>()
   frames.forEach((frame, i) => {
     pending.set(frame.contentWindow!, { frame, index: i + 1 })
   })
 
-  const gathered: { frame: HTMLIFrameElement; payload: FramePayload; source: Window }[] = []
+  const gathered: { frame: EmbeddedFrame; payload: FramePayload; source: Window }[] = []
 
   await new Promise<void>((resolve) => {
     const timer = setTimeout(finish, SCAN_TIMEOUT_MS)

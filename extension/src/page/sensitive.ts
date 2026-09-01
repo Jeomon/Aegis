@@ -70,8 +70,23 @@ const LABEL_PATTERNS: [RegExp, SensitiveKind][] = [
   [/\b(e-?mail)\b/i, 'email'],
   [/\b(phone|mobile|contact number)\b/i, 'tel'],
   [/\b(address|street)\b/i, 'street-address'],
-  [/\b(date of birth|dob|birthday)\b/i, 'bday'],
+  [/\b(date[\s-]?of[\s-]?birth|dob|birthday|birth[\s-]?date)\b/i, 'bday'],
+  // Qualified deliberately: a bare "name" matches product name, file name, brand name.
+  [/\b(first|last|full|given|middle|sur|family)[\s-]?name\b/i, 'name'],
+  [/\bname[\s-]?on[\s-]?card\b/i, 'name'],
 ]
+
+/**
+ * Identifiers are written as one word — userEmail, dateOfBirthInput, card_number — so a
+ * pattern anchored on word boundaries never matches them. Real pages rely on this far more
+ * than on labels: demoqa's entire form is camelCase ids with no label and no name
+ * attribute at all.
+ */
+function splitIdentifier(text: string): string {
+  return text
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_\-.]+/g, ' ')
+}
 
 /** Text the author attached to the field itself, used only for the fallback patterns. */
 function labelText(el: Element): string {
@@ -86,7 +101,7 @@ function labelText(el: Element): string {
     for (const label of el.labels ?? []) parts.push(label.textContent)
   }
 
-  return parts.filter(Boolean).join(' ')
+  return splitIdentifier(parts.filter(Boolean).join(' '))
 }
 
 /**
