@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Embedded statement</title>
+<style>
+  body { font: 13px/1.6 system-ui, sans-serif; margin: 10px; color: #111 }
+  label { display: block; margin: 8px 0 }
+  input { font: 12px monospace; width: 190px }
+</style>
+</head>
+<body>
+<!-- The frame case: a payment form, which is where card data actually lives. -->
+<p>Statement for <span data-pii="pan">BXZPM4321K</span></p>
+<p>Order <span data-decoy="12 digits, fails Verhoeff">100234567893</span> — ₹1,299</p>
+<label>Card number <input autocomplete="cc-number" value="4242424242424242"></label>
+<label>CVV <input autocomplete="cc-csc" value="921"></label>
+</body>
+</html>

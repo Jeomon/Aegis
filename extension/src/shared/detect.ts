@@ -157,9 +157,15 @@ const DETECTORS: Detector[] = [
   },
   {
     kind: 'tel',
-    pattern: /(?:\+91[ -]?)?\b[6-9]\d{9}\b/g,
+    // Indian mobiles are conventionally written with a break after five digits — "98765
+    // 43210" — so demanding ten consecutive digits misses the format people actually use.
+    // The leading digit is still 6-9, which is what keeps order numbers and epochs out.
+    pattern: /(?:\+?91[\s-]?)?\b[6-9]\d{4}[\s-]?\d{5}\b/g,
     // A ten-digit run inside something longer is part of that longer thing, not a number.
-    accept: (raw) => digitsOf(raw).length <= 12,
+    accept: (raw) => {
+      const digits = digitsOf(raw)
+      return digits.length === 10 || (digits.length === 12 && digits.startsWith('91'))
+    },
   },
 ]
 

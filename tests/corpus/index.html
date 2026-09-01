@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Aegis redaction corpus — Ravi Menon statement</title>
+<!--
+  Labelled corpus for measuring redaction, not for demonstrating it.
+
+  Every identifier is wrapped in <span data-pii="kind"> and every decoy in
+  <span data-decoy="why">. A decoy is a string that a naive detector takes and a correct one
+  leaves alone — an order number that is twelve digits, a card-shaped run that fails Luhn,
+  an Aadhaar with one digit transposed. Precision is 20% of the marks and it is entirely
+  decided by these.
+
+  All values are synthetic. The Aadhaar numbers satisfy Verhoeff and the cards satisfy Luhn
+  because a detector that only sees invalid examples is never actually exercised.
+-->
+<style>
+  body { font: 14px/1.7 system-ui, sans-serif; margin: 24px; max-width: 720px; color: #111 }
+  h2 { font-size: 15px; margin: 26px 0 8px; border-bottom: 1px solid #ddd; padding-bottom: 4px }
+  label { display: block; margin: 8px 0 }
+  input, textarea { font: 13px monospace; width: 260px; padding: 3px }
+  .row { display: flex; gap: 8px; align-items: baseline }
+  #scroller { height: 90px; overflow-y: auto; border: 1px solid #bbb; padding: 6px; width: 320px }
+  iframe { width: 380px; height: 150px; border: 2px solid #888; display: block; margin: 8px 0 }
+</style>
+</head>
+<body>
+
+<h2>1 — Declared fields (layer 1: DOM rules)</h2>
+<label>Password <input type="password" value="hunter2-not-real"></label>
+<label>Email <input type="email" value="ravi.menon@example.com"></label>
+<label>Phone <input type="tel" value="9876543210"></label>
+<label>Card number <input autocomplete="cc-number" value="4111111111111111"></label>
+<label>CVV <input autocomplete="cc-csc" value="123"></label>
+<label>One-time code <input autocomplete="one-time-code" value="482913"></label>
+
+<h2>2 — Undeclared fields, camelCase ids only (as real forms are built)</h2>
+<label>First <input type="text" id="firstName" placeholder="First Name" value="Ravi"></label>
+<label>DOB <input type="text" id="dateOfBirthInput" value="12/03/1998"></label>
+<label>UID <input type="text" id="aadhaarNumber" value="2345 6789 0124"></label>
+
+<h2>3 — Decoy fields (must NOT be redacted)</h2>
+<label>Search <input type="search" value="blue running shoes"></label>
+<label>Quantity <input type="number" value="3"></label>
+<label>Order ref <input type="text" id="orderReference" value="100234567891"></label>
+
+<h2>4 — Identifiers in prose (layer 2: regex + checksum)</h2>
+<p>
+  Account holder <span data-pii="name">Ravi Menon</span>, UID
+  <span data-pii="aadhaar">2345 6789 0124</span>, PAN
+  <span data-pii="pan">ABCPE1234F</span>.
+</p>
+<p>
+  GST <span data-pii="gstin">27ABCPE1234F1Z5</span> settled to
+  <span data-pii="ifsc">HDFC0001234</span>, card ending
+  <span data-pii="cc-number">5555 5555 5555 4444</span>.
+</p>
+<p>
+  Contact <span data-pii="email">ravi.menon@example.com</span> or
+  <span data-pii="tel">+91 98765 43210</span>.
+</p>
+
+<h2>5 — Decoys in prose (must survive)</h2>
+<p>
+  Order <span data-decoy="12 digits, fails Verhoeff">100234567891</span> shipped at
+  <span data-decoy="epoch millis">1735689600000</span> for
+  <span data-decoy="price">₹4,500</span>.
+</p>
+<p>
+  Tracking <span data-decoy="16 digits, fails Luhn">1234567812345678</span>, invoice
+  <span data-decoy="PAN shape, invalid entity letter">ABCDE1234F</span>, ref
+  <span data-decoy="Aadhaar with two digits swapped">2345 6789 0142</span>.
+</p>
+<p>
+  Meeting at <span data-decoy="time">09:30</span>, room
+  <span data-decoy="short number">4021</span>, budget line
+  <span data-decoy="10 digits, leading 1 so not an Indian mobile">1002345678</span>.
+</p>
+
+<h2>6 — Inside a scroll container</h2>
+<div id="scroller">
+  <p>Row 1 — nothing here.</p>
+  <p>Row 2 — PAN <span data-pii="pan">AAAPZ1234C</span> on file.</p>
+  <p>Row 3 — nothing here.</p>
+  <p>Row 4 — nothing here.</p>
+</div>
+
+<h2>7 — Inside an open shadow root</h2>
+<div id="shadow-host"></div>
+
+<h2>8 — Inside a same-origin iframe</h2>
+<iframe title="Embedded statement" src="./frame.html"></iframe>
+
+<script>
+  const host = document.getElementById('shadow-host')
+  const root = host.attachShadow({ mode: 'open' })
+  root.innerHTML = `
+    <style>p { font: 14px/1.7 system-ui; margin: 4px 0 }</style>
+    <p>Shadow UID <span data-pii="aadhaar">3456 7890 1238</span> and
+       order <span data-decoy="12 digits, fails Verhoeff">100234567892</span>.</p>
+    <label style="font:14px system-ui">Shadow password
+      <input type="password" value="shadow-secret">
+    </label>`
+</script>
+
+</body>
+</html>
