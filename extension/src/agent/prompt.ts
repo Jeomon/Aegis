@@ -71,6 +71,29 @@ const VIEWPORT_LIMIT = [
   'before concluding it is not there.',
 ].join('\n')
 
+/**
+ * Redaction is not a detail of the tool; it changes what the model can know, so it is
+ * stated plainly rather than left to be inferred from a marker it has never seen.
+ *
+ * The last line matters most. Everything above withholds values, and a model trying to be
+ * helpful has an obvious route around it — read the field with evaluate, or reconstruct the
+ * number from context. Neither is disobedience; both would simply undo the work.
+ */
+const REDACTION = [
+  'Personal data is removed on this device before anything reaches you, so parts of what',
+  'you are shown are deliberately missing. Anything written [redacted:kind] was removed;',
+  'the kind tells you what it was. Black rectangles in a screenshot are the same thing,',
+  'not a rendering fault.',
+  '',
+  'A marker carrying a number — [redacted:email#3] — is a handle to a real value held on',
+  'the device. Pass it verbatim as the text to type and it is restored at the keystroke,',
+  'into a field of the same kind only. You never see the value, and you do not need to.',
+  '',
+  'A marker without a number cannot be restored. If a task needs a value you cannot see,',
+  'say so and ask the user — do not guess it, do not reconstruct it from context, and do',
+  'not use evaluate to read it back. It was hidden on purpose.',
+].join('\n')
+
 const BEHAVIOUR = [
   "Read an element's state before acting on it. A control already showing [pressed],",
   '[checked] or [selected] is in that state — clicking it again reverses it. If the user',
@@ -102,6 +125,8 @@ export function buildSystemPrompt(context: PromptContext): string {
     observationGuidance(context.observationMode),
     '',
     TOOL_GUIDELINES,
+    '',
+    REDACTION,
     '',
     BEHAVIOUR,
   ].join('\n')
