@@ -59,25 +59,42 @@ function toBounds(rect: DOMRect): Bounds {
  * them, and reading a secret into a structure that outlives the paint would give it a
  * second life for no benefit.
  */
+/**
+ * Every text node under a root, descending through open shadow roots.
+ *
+ * A component that renders its content into a shadow root is on screen like anything else,
+ * so a walker stopping at the shadow boundary leaves that text visible in the capture and
+ * unmasked. scan.ts already crosses the boundary for elements; this crosses it for text.
+ *
+ * Closed roots stay unreachable, which is a limitation of the platform rather than of this
+ * walk — nothing in the page can read them either.
+ */
+function* eachTextNode(root: Node): Generator<Text> {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT)
+
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      yield node as Text
+      continue
+    }
+    const shadow = (node as Element).shadowRoot
+    if (shadow) yield* eachTextNode(shadow)
+  }
+}
+
 export function piiTextRegions(): Bounds[] {
   const regions: Bounds[] = []
 
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
-    acceptNode(node) {
-      const parent = node.parentElement
-      if (!parent) return NodeFilter.FILTER_REJECT
-      if (SKIP_TAGS.has(parent.tagName.toLowerCase())) return NodeFilter.FILTER_REJECT
-      // Short runs cannot hold any identifier we look for; the shortest is a ten-digit phone.
-      if (!node.nodeValue || node.nodeValue.trim().length < 10) return NodeFilter.FILTER_REJECT
-      return NodeFilter.FILTER_ACCEPT
-    },
-  })
-
   let visited = 0
-  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+  for (const node of eachTextNode(document.body)) {
     if (++visited > MAX_NODES || regions.length >= MAX_RECTS) break
 
-    const text = node.nodeValue!
+    const parent = node.parentElement
+    if (!parent || SKIP_TAGS.has(parent.tagName.toLowerCase())) continue
+    // Short runs cannot hold any identifier we look for; the shortest is a ten-digit phone.
+    if (!node.nodeValue || node.nodeValue.trim().length < 10) continue
+
+    const text = node.nodeValue
     const matches = findPii(text)
     if (!matches.length) continue
 
