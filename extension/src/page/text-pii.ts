@@ -15,8 +15,7 @@
  * cover the whole paragraph width between them.
  */
 
-import { findPii, redactText } from '../shared/detect'
-import { conceal } from './vault'
+import { findPii } from '../shared/detect'
 import type { Bounds } from '../shared/types'
 
 /** Nothing inside these carries rendered text worth measuring. */
@@ -86,51 +85,81 @@ function* eachTextNode(root: Node): Generator<Text> {
 import { findNerPiiBatch } from '../shared/ner'
 import type { Match } from '../shared/detect'
 
+/**
+ * Interface chrome, as opposed to content.
+ *
+ * The cascade's rule is that a model runs only where the cheap layers could not explain
+ * what it is looking at, and for text that means page content rather than the controls
+ * around it. A field's own label is the case that matters: "CVV" inside a <label> is
+ * already classified structurally by layer 1, and handing it to an NER is precisely how it
+ * comes back tagged as an organisation.
+ *
+ * This tests what the node *is* rather than how long it is. A word-count threshold looked
+ * equivalent and was not — a name usually sits in its own <span>, so "Ravi Menon" is two
+ * words and would have been skipped, which is the one thing the model exists to catch.
+ */
+const CHROME_SELECTOR = 'label, button, option, select, th, summary, [role="button"], [role="tab"]'
+
+function isInterfaceChrome(node: Text): boolean {
+  return node.parentElement?.closest(CHROME_SELECTOR) !== null
+}
+
+/**
+ * Where identifiers are on screen, from both the rules and the model.
+ *
+ * One walk, one batch. The previous shape walked the DOM twice and ran the model over both
+ * passes — the same nodes, classified twice, which was the bulk of a twelve-second scan.
+ */
 export async function piiTextRegions(): Promise<Bounds[]> {
   const regions: Bounds[] = []
 
+  const nodes: Text[] = []
+  const texts: string[] = []
   let visited = 0
-  const validNodes: Text[] = []
-  const textsToScan: string[] = []
 
   for (const node of eachTextNode(document.body)) {
     if (++visited > MAX_NODES) break
 
     const parent = node.parentElement
     if (!parent || SKIP_TAGS.has(parent.tagName.toLowerCase())) continue
+    // Short runs cannot hold any identifier we look for; the shortest is a ten-digit phone.
     if (!node.nodeValue || node.nodeValue.trim().length < 10) continue
 
-    validNodes.push(node)
-    textsToScan.push(node.nodeValue)
+    nodes.push(node)
+    texts.push(node.nodeValue)
   }
 
-  const batchNerMatches = await findNerPiiBatch(textsToScan);
+  // Only page content reaches the model; every node still goes through the rules.
+  const proseIndexes = nodes.map((n, i) => (isInterfaceChrome(n) ? -1 : i)).filter((i) => i >= 0)
+  const nerByIndex = new Map<number, Match[]>()
 
-  for (let i = 0; i < validNodes.length; i++) {
-    if (regions.length >= MAX_RECTS) break;
-    
-    const node = validNodes[i];
-    const text = textsToScan[i];
-    const mlMatches = batchNerMatches[i];
+  if (proseIndexes.length) {
+    const results = await findNerPiiBatch(proseIndexes.map((i) => texts[i]))
+    proseIndexes.forEach((index, n) => nerByIndex.set(index, results[n] ?? []))
+  }
 
-    let matches = [...findPii(text), ...mlMatches];
-    if (!matches.length) continue;
+  for (let i = 0; i < nodes.length; i++) {
+    if (regions.length >= MAX_RECTS) break
 
-    matches.sort((a, b) => a.start - b.start || b.end - a.end);
-    const kept: Match[] = []
+    const text = texts[i]
+    const matches = [...findPii(text), ...(nerByIndex.get(i) ?? [])]
+    if (!matches.length) continue
+
+    // Earliest start wins, longest on a tie: a GSTIN is not also reported as the PAN inside
+    // it, and a name found by both engines is masked once.
+    matches.sort((a, b) => a.start - b.start || b.end - a.end)
     let consumed = -1
+
     for (const match of matches) {
       if (match.start < consumed) continue
-      kept.push(match)
       consumed = match.end
-    }
 
-    for (const match of kept) {
       const range = document.createRange()
-      range.setStart(node, match.start)
-      range.setEnd(node, match.end)
+      range.setStart(nodes[i], match.start)
+      range.setEnd(nodes[i], match.end)
 
       for (const rect of range.getClientRects()) {
+        // A zero-area rect is a collapsed or undisplayed fragment, not something on screen.
         if (rect.width <= 0 || rect.height <= 0) continue
         if (offScreen(rect)) continue
         regions.push(toBounds(rect))
@@ -143,30 +172,4 @@ export async function piiTextRegions(): Promise<Bounds[]> {
   }
 
   return regions
-}
-
-export async function extractRedactedText(): Promise<string> {
-  const fullText: string[] = []
-  const textsToScan: string[] = []
-
-  for (const node of eachTextNode(document.body)) {
-    const parent = node.parentElement
-    if (!parent || SKIP_TAGS.has(parent.tagName.toLowerCase())) continue
-    
-    const text = node.nodeValue
-    if (!text || text.trim().length === 0) continue
-
-    textsToScan.push(text)
-  }
-
-  const batchNerMatches = await findNerPiiBatch(textsToScan);
-
-  for (let i = 0; i < textsToScan.length; i++) {
-    const text = textsToScan[i];
-    const mlMatches = batchNerMatches[i];
-    const { text: redacted } = redactText(text, conceal, mlMatches)
-    fullText.push(redacted)
-  }
-  
-  return fullText.join('\n')
 }

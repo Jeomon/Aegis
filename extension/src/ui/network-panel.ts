@@ -10,7 +10,13 @@
  * without the panel being open.
  */
 
-import { egressLog, onEgress, type EgressRecord } from '../observe/redact/egress'
+import {
+  EGRESS_MESSAGE,
+  egressLog,
+  onEgress,
+  recordExternal,
+  type EgressRecord,
+} from '../observe/redact/egress'
 
 const toggleEl = document.querySelector<HTMLButtonElement>('#networkToggle')!
 const dotEl = document.querySelector<HTMLSpanElement>('#networkDot')!
@@ -102,4 +108,11 @@ export function mountNetworkPanel(): void {
 
   toggleEl.addEventListener('click', () => setOpen(!open))
   onEgress(add)
+
+  // Requests made by the content script — model weights, chiefly — happen in another
+  // JavaScript context and cannot reach this log by return value, so they are forwarded
+  // as messages. One panel then accounts for both contexts rather than only its own.
+  chrome.runtime.onMessage.addListener((message: { type?: string; entry?: EgressRecord }) => {
+    if (message?.type === EGRESS_MESSAGE && message.entry) recordExternal(message.entry)
+  })
 }

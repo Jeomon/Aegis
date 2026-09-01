@@ -20,6 +20,9 @@ import { PROVIDERS } from '../../providers/registry'
 import { findPii } from '../../shared/detect'
 import type { SensitiveKind } from '../../shared/types'
 
+/** Message type carrying a content-script record to the panel's log. */
+export const EGRESS_MESSAGE = 'AEGIS_EGRESS' as const
+
 export interface EgressRecord {
   at: number
   host: string
@@ -46,10 +49,38 @@ export function egressLog(): readonly EgressRecord[] {
   return log
 }
 
+/**
+ * Record something a different JavaScript context observed.
+ *
+ * The content script runs its own guard over its own globalThis, so its records cannot
+ * reach this log by return value. They are forwarded as messages and land here, which is
+ * what lets one panel show every request rather than only the panel's own.
+ */
+export function recordExternal(entry: EgressRecord): void {
+  record(entry)
+}
+
 function record(entry: EgressRecord): void {
   log.push(entry)
   if (log.length > LOG_LIMIT) log.shift()
   for (const listener of listeners) listener(entry)
+}
+
+/**
+ * Hosts that serve code and model weights rather than receiving data.
+ *
+ * Layer 3 fetches its weights at runtime, and that fetch happens in the content script —
+ * outside the panel where this guard was originally installed, and therefore invisible to
+ * the panel that claims to show every request. Naming them here makes the dependency
+ * explicit and puts it in the log, rather than leaving it unmonitored because it is
+ * inbound.
+ *
+ * Matched by suffix: the Hugging Face CDN answers from several rotating subdomains.
+ */
+const ASSET_HOSTS = ['huggingface.co', 'hf.co', 'cdn.jsdelivr.net', 'unpkg.com']
+
+function isAssetHost(host: string): boolean {
+  return ASSET_HOSTS.some((allowed) => host === allowed || host.endsWith(`.${allowed}`))
 }
 
 /** Hosts the extension is allowed to talk to at all: exactly its configured providers. */
@@ -175,6 +206,21 @@ export function installEgressGuard(): void {
 
     const body = await bodyText(init, input)
     const bytes = body.length
+
+    // A model download sends nothing and receives weights. It is still recorded, because a
+    // user watching this panel should see everything the extension talks to.
+    if (isAssetHost(host)) {
+      if (body) {
+        const verdict = inspectBody(body)
+        if (!verdict.ok) {
+          const entry = { at: Date.now(), host, bytes, allowed: false, reason: verdict.reason, kinds: verdict.kinds }
+          record(entry)
+          throw new EgressBlocked(`${verdict.reason} Nothing was sent.`, entry)
+        }
+      }
+      record({ at: Date.now(), host, bytes, allowed: true, reason: 'model or runtime download' })
+      return original(input, init)
+    }
 
     if (!hosts.has(host)) {
       const entry = {

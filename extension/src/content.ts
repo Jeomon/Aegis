@@ -9,9 +9,9 @@
 import { ACT_MESSAGE } from './shared/actions'
 import type { ActMessage } from './shared/actions'
 import { collectFrame, dispatchAction, installFrameResponder } from './page/frames'
+import { EGRESS_MESSAGE, installEgressGuard, onEgress } from './observe/redact/egress'
 import { conceal } from './page/vault'
 import { redactText } from './shared/detect'
-import { extractRedactedText } from './page/text-pii'
 import { scanImagesForPii } from './page/image-ocr'
 import type { ScanResult } from './shared/types'
 
@@ -22,13 +22,9 @@ async function scan(): Promise<ScanResult> {
   // out — all already translated into this frame's coordinates.
   const { elements, roots, regions: piiRegions, counts } = await collectFrame()
 
-    const ocrResult = await scanImagesForPii()
-    
-    // Combine text
-    const extractedText = await extractRedactedText();
-    const fullPageText = extractedText + (ocrResult.text ? '\n' + ocrResult.text : '')
-    // Combine regions
-    const allRegions = [...piiRegions, ...ocrResult.regions]
+  // Text found inside images, which no DOM layer can reach.
+  const ocr = await scanImagesForPii()
+  const allRegions = [...piiRegions, ...ocr.regions]
 
   return {
     elements,
@@ -45,7 +41,6 @@ async function scan(): Promise<ScanResult> {
     // fields, so the same Aadhaar in the title and in an input is one handle, not two.
     url: redactText(location.href, conceal).text,
     title: redactText(document.title, conceal).text,
-    pageText: fullPageText,
     piiRegions: allRegions,
     scanMs: Math.round(performance.now() - started),
     counts,
@@ -75,3 +70,17 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 // Every frame answers its parent; only the top frame is ever asked to scan, because only
 // it has a screenshot to align with.
 installFrameResponder()
+
+/**
+ * The content script does its own egress now, because layer 3 fetches model weights from
+ * here rather than from the panel. A guard installed only in the panel would have left that
+ * unwatched — and the panel says it shows every request the extension makes.
+ *
+ * Wrapping fetch here touches the isolated world only; the page's own fetch is untouched.
+ * Records are forwarded so one panel shows both contexts.
+ */
+installEgressGuard()
+onEgress((entry) => {
+  // The panel may not be open. Nothing depends on delivery, so a failure is ignored.
+  void chrome.runtime.sendMessage({ type: EGRESS_MESSAGE, entry }).catch(() => {})
+})
