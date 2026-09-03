@@ -44,14 +44,54 @@ async function activeTab(): Promise<chrome.tabs.Tab> {
  */
 const TOP_FRAME = { frameId: 0 } as const
 
+/**
+ * A navigation is not finished when chrome.tabs.update() resolves — that only means the
+ * request was accepted. Scanning immediately afterwards reaches frame 0 mid-flight, where
+ * it is a transient interstitial rather than the page, and injection fails with "Frame with
+ * ID 0 is showing error page".
+ *
+ * Bounded rather than open-ended: a page that never fires `complete` still has a DOM worth
+ * looking at, so the wait gives up and lets the scan try anyway.
+ */
+const LOAD_TIMEOUT_MS = 8000
+
+function waitForLoad(tabId: number): Promise<void> {
+  return new Promise((resolve) => {
+    const finish = (): void => {
+      clearTimeout(timer)
+      chrome.tabs.onUpdated.removeListener(onUpdated)
+      // A frame that has just reported `complete` is not yet reliably injectable; the
+      // renderer swaps documents a moment later. This is the smallest wait that held.
+      setTimeout(resolve, 150)
+    }
+
+    const timer = setTimeout(finish, LOAD_TIMEOUT_MS)
+    function onUpdated(id: number, info: { status?: string }): void {
+      if (id === tabId && info.status === 'complete') finish()
+    }
+
+    chrome.tabs.onUpdated.addListener(onUpdated)
+
+    // Already settled before the listener attached.
+    void chrome.tabs.get(tabId).then((tab) => {
+      if (tab.status === 'complete') finish()
+    })
+  })
+}
+
 async function sendToPage<T>(tabId: number, message: unknown): Promise<T> {
   try {
     return await chrome.tabs.sendMessage(tabId, message, TOP_FRAME)
   } catch {
-    await chrome.scripting.executeScript({
-      target: { tabId, frameIds: [0] },
-      files: ['content.js'],
-    })
+    // Not yet injected, or the document was swapped out from under us. Injecting can fail
+    // on its own terms — an error page, a chrome:// URL, a frame mid-swap — so one settle
+    // and one retry, then let the caller report something a user can act on.
+    try {
+      await chrome.scripting.executeScript({ target: { tabId, frameIds: [0] }, files: ['content.js'] })
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, 400))
+      await chrome.scripting.executeScript({ target: { tabId, frameIds: [0] }, files: ['content.js'] })
+    }
     return await chrome.tabs.sendMessage(tabId, message, TOP_FRAME)
   }
 }
@@ -121,6 +161,7 @@ async function runTabAction(action: TabAction): Promise<ActionResult> {
       if (!action.url) {
         const tab = await activeTab()
         await chrome.tabs.reload(tab.id!)
+        await waitForLoad(tab.id!)
         return { ok: true, message: 'Page reloaded.' }
       }
       const url = normaliseUrl(action.url)
@@ -130,18 +171,21 @@ async function runTabAction(action: TabAction): Promise<ActionResult> {
       }
       const tab = await activeTab()
       await chrome.tabs.update(tab.id!, { url })
+      await waitForLoad(tab.id!)
       return { ok: true, message: `Navigated to ${url}.` }
     }
 
     case 'back': {
       const tab = await activeTab()
       await chrome.tabs.goBack(tab.id!)
+      await waitForLoad(tab.id!)
       return { ok: true, message: 'Went back.' }
     }
 
     case 'forward': {
       const tab = await activeTab()
       await chrome.tabs.goForward(tab.id!)
+      await waitForLoad(tab.id!)
       return { ok: true, message: 'Went forward.' }
     }
 
