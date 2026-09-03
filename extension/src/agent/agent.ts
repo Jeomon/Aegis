@@ -267,7 +267,12 @@ async function withCapacityRetry<T>(
     try {
       return await attempt()
     } catch (err: unknown) {
-      const retryable = err instanceof ChatError && CAPACITY.test(err.body)
+      // Both, not just the body: a capacity refusal that arrives as an SSE frame after
+      // HTTP 200 is not an APIError, so it reaches ChatError with an empty body and the
+      // text only in the message. Testing the body alone meant this retry never fired for
+      // the one error it exists for.
+      const retryable =
+        err instanceof ChatError && CAPACITY.test(`${err.body} ${err.message}`)
       if (!retryable || i >= RETRY_DELAYS_MS.length || signal?.aborted) throw err
       await sleep(RETRY_DELAYS_MS[i])
     }
