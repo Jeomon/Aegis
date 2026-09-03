@@ -355,7 +355,7 @@ async function showCapture(scan: ScanResult, summary: string): Promise<void> {
 
   const masked = annotated.masked
   const note = masked
-    ? `${summary} · ${masked} region${masked === 1 ? '' : 's'} redacted before sending`
+    ? `${summary} · ${masked} region${masked === 1 ? '' : 's'} redacted`
     : `${summary} · nothing to redact on this page`
 
   appendMessage({ role: 'assistant', text: note, image: annotated.dataUrl })
