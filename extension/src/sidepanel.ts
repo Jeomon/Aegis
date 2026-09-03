@@ -26,6 +26,7 @@ import type { Message, PageContext, ScanResult } from './shared/types'
 import { installEgressGuard } from './observe/redact/egress'
 import { mountNetworkPanel } from './ui/network-panel'
 import { annotateScreenshot } from './observe/annotate'
+import { stripControlTokens } from './shared/control-tokens'
 
 // Installed before anything can issue a request: the SDKs call fetch, so wrapping it is
 // the one place every provider path must pass through.
@@ -243,7 +244,9 @@ function beginLive(options: { dim?: boolean; mono?: boolean } = {}): LiveBubble 
   const flush = (): void => {
     scheduled = false
     if (!message || !bubble) return
-    message.text = text
+    // Stripped from the accumulated buffer rather than each delta: a control token split
+    // across two chunks is only recognisable once both have arrived.
+    message.text = stripControlTokens(text)
     paint(bubble, message)
     messagesEl.scrollTop = messagesEl.scrollHeight
   }
