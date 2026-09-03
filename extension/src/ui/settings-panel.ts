@@ -37,6 +37,7 @@ const statusEl = document.querySelector<HTMLDivElement>('#activeStatus')!
 const filterEl = document.querySelector<HTMLInputElement>('#modelFilter')!
 const countEl = document.querySelector<HTMLDivElement>('#modelCount')!
 const thinkingEl = document.querySelector<HTMLSelectElement>('#thinkingLevel')!
+const thinkingFieldEl = document.querySelector<HTMLLabelElement>('#thinkingField')!
 const modeEl = document.querySelector<HTMLSelectElement>('#observationMode')!
 const warningEl = document.querySelector<HTMLDivElement>('#pixelWarning')!
 const tabEls = [...document.querySelectorAll<HTMLButtonElement>('.tab')]
@@ -200,15 +201,16 @@ function renderThinking(providerId: string, modelId: string, selected: string): 
   const model = MODELS.find((m) => m.provider === providerId && m.id === modelId)
   const levels = thinkingLevelsFor(model)
 
+  // A model with nothing to adjust gets no control. A disabled dropdown reading "not
+  // adjustable" is a row the eye has to read before discarding — the absence says it
+  // faster, and the status line below already names the model's behaviour.
   if (!levels.length) {
-    const option = document.createElement('option')
-    option.textContent = model ? 'not adjustable on this model' : 'select a model first'
-    option.disabled = true
-    thinkingEl.replaceChildren(option)
-    thinkingEl.disabled = true
+    thinkingFieldEl.hidden = true
+    thinkingEl.replaceChildren()
     return
   }
 
+  thinkingFieldEl.hidden = false
   thinkingEl.disabled = false
   thinkingEl.replaceChildren(
     ...levels.map((level) => {
