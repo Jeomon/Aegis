@@ -12,6 +12,10 @@ Built for **SIH26171** (ISRO, Software) by Team Aetheris, IIT Madras BS Degree P
 
 ## Status
 
+**Submitted for SIH 2026 Round 4 on 3 September 2026** — repository, deployed link and a
+demo video under three minutes. Round 4 is marked together with the Round 3 deck as one
+combined score.
+
 The agent loop runs end to end: the page is scanned, an observation is sent, tool calls come
 back, and actions are executed against the live tab. Verified against a live model through
 the loaded extension — a request typed into the panel reaches the page as a keystroke.
@@ -83,10 +87,17 @@ count of what was covered. It calls the same capture and masking the agent loop 
 preview of them, so the panel cannot be reassuring about something that is not what gets
 sent.
 
-**Not covered**, and worth saying plainly: faces; text rendered inside images; names and
-addresses in ordinary prose, which carry no pattern to match; and anything in a closed
-shadow root, which no script on the page can read either. `evaluate` returns raw page data
-by deliberate choice and runs only in the top frame.
+Faces are found on-device by YuNet — a 227 KB ONNX model run through onnxruntime-web on the
+CPU, no network call — and painted out in the same pass as everything else. The box it
+returns is deliberately generous: over-covering costs a little background, under-covering
+costs a face.
+
+**Not covered**, and worth saying plainly: text rendered inside images; names and addresses
+in ordinary prose, which carry no pattern to match; and anything in a closed shadow root,
+which no script on the page can read either. A value the user names but whose format is not
+self-identifying — "enter cvv as 354" — is not caught either, because three digits are three
+digits without the sentence around them. `evaluate` returns raw page data by deliberate
+choice and runs only in the top frame.
 
 ---
 
