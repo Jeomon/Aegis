@@ -33,7 +33,18 @@ let counter = 0
 /** `s` for session: distinct from the page's frame tags (empty, f1-, f1-1-). */
 const TAG = 's'
 
-export const SESSION_HANDLE_PATTERN = /\[redacted:([a-z-]+)#(s\d+)\]/g
+/**
+ * The `s` is optional when reading.
+ *
+ * A model reproducing a handle is copying a token out of prose, and it drops the tag often
+ * enough to matter: asked to type `[redacted:email#s1]` it emits `[redacted:email#1]`. A
+ * strict pattern leaves that unmatched, and the literal text lands in the field — the exact
+ * failure this vault exists to prevent, made worse by looking like it worked.
+ *
+ * Reading loosely is safe because the lookup still has to hit: a number with no session
+ * entry falls through untouched, and the page's own vault gets its turn.
+ */
+export const SESSION_HANDLE_PATTERN = /\[redacted:([a-z-]+)#s?(\d+)\]/g
 
 function conceal(kind: SensitiveKind, value: string): string {
   const key = `${kind}\u0000${value}`
@@ -72,7 +83,9 @@ export interface Restored {
 export function restoreForAction(text: string): Restored {
   const kinds: SensitiveKind[] = []
   const out = text.replace(SESSION_HANDLE_PATTERN, (token, _kind: string, id: string) => {
-    const entry = byHandle.get(`${_kind}#${id}`)
+    // Minted with the tag, read with or without it: the pattern makes the `s` optional, so
+    // the digits arrive bare and the tag has to go back on for the lookup.
+    const entry = byHandle.get(`${_kind}#${TAG}${id}`)
     if (!entry) return token
     kinds.push(entry.kind)
     return entry.value
