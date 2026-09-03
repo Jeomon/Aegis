@@ -222,9 +222,10 @@ export async function runAgentTurn(
     }
 
     // Keep the assistant's tool_calls turn: providers reject tool results without it.
+    // Null rather than '' when the model said nothing — see ChatMessage.content.
     history.push({
       role: 'assistant',
-      content: result.content ?? '',
+      content: result.content?.trim() ? result.content : null,
       tool_calls: result.toolCalls,
     })
 

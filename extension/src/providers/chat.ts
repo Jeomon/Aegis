@@ -33,7 +33,12 @@ export interface ToolCall {
 
 export interface ChatMessage {
   role: Role
-  content: string | ContentPart[]
+  /**
+   * Null, not an empty string, when an assistant turn is only tool calls. The OpenAI schema
+   * allows null there and NVIDIA rejects "" outright — "Empty content is not allowed for
+   * assistant messages" — so the empty string is the one value that is wrong everywhere.
+   */
+  content: string | ContentPart[] | null
   /** Present on assistant turns that called tools. */
   tool_calls?: ToolCall[]
   /** Required on tool results, matching the call being answered. */

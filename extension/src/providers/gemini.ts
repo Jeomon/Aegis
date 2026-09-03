@@ -34,7 +34,9 @@ function imagePart(dataUrl: string): Part | undefined {
 }
 
 function contentParts(content: ChatMessage['content']): Part[] {
-  if (typeof content === 'string') return content ? [{ text: content }] : []
+  // Null is an assistant turn that was only tool calls; it contributes no parts.
+  if (!content) return []
+  if (typeof content === 'string') return [{ text: content }]
 
   const parts: Part[] = []
   for (const part of content) {

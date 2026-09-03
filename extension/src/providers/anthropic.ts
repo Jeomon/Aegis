@@ -44,7 +44,9 @@ function imageBlock(dataUrl: string): Block | undefined {
 }
 
 function contentBlocks(content: ChatMessage['content']): Block[] {
-  if (typeof content === 'string') return content ? [{ type: 'text', text: content }] : []
+  // Null is an assistant turn that was only tool calls; it contributes no blocks.
+  if (!content) return []
+  if (typeof content === 'string') return [{ type: 'text', text: content }]
 
   const blocks: Block[] = []
   for (const part of content) {
