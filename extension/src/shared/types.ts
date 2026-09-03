@@ -36,6 +36,8 @@ export interface Message {
    * the request disagree about what was sent.
    */
   image?: string
+  /** What a scan withheld, rendered as a result rather than a sentence. */
+  receipt?: { summary: string; masked: number }
   /**
    * A tool the agent invoked. Rendered as an activity card rather than a chat bubble —
    * it is something that happened, not something anyone said.

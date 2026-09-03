@@ -6,15 +6,42 @@
     <style>
       :root {
         color-scheme: dark;
-        --bg: #0f1115;
-        --panel: #171a20;
-        --line: #262b33;
-        --text: #e7eaf0;
-        --muted: #8b93a1;
+
+        /* Ground and ink. Neutral rather than blue-black: the panel frames screenshots of
+           real pages, and a cast in the chrome makes every capture look colour-shifted. */
+        --bg: #0e0f11;
+        --panel: #16181c;
+        --raise: #1c1f24;
+        --line: #272a30;
+        --text: #e8e9ec;
+        --muted: #8d9199;
+
+        /* One accent, for the agent's own voice and focus. */
         --accent: #4c8dff;
         --good: #3fb950;
         --warn: #d29922;
         --danger: #f85149;
+
+        /* The product's own material: the redaction bar. Used for the mask motif only,
+           never as decoration — it means "this was withheld". */
+        --ink: #000000;
+
+        /* Type roles. Data is set in mono because ids, hosts and byte counts are read
+           character by character, and prose is not. */
+        --ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        --data: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+        /* Four steps, not eight ad-hoc values. */
+        --t-micro: 10.5px;
+        --t-small: 11.5px;
+        --t-body: 12.5px;
+        --t-lead: 14px;
+
+        /* One spacing rhythm. */
+        --gap-1: 4px;
+        --gap-2: 8px;
+        --gap-3: 12px;
+        --gap-4: 16px;
       }
       * { box-sizing: border-box; }
       html, body { height: 100%; }
@@ -31,9 +58,9 @@
       .row { display: flex; align-items: center; gap: 8px; }
       .brand { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; }
       .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; }
-      h1 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: 0.2px; }
+      h1 { margin: 0; font-size: var(--t-lead); font-weight: 600; letter-spacing: 0.2px; }
       #context {
-        margin-top: 3px; font-size: 11.5px; color: var(--muted);
+        margin-top: 3px; font-size: var(--t-small); color: var(--muted);
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       }
       #actions { display: flex; gap: 6px; margin-top: 9px; }
@@ -41,14 +68,14 @@
         height: 26px; padding: 0 10px;
         border: 1px solid var(--line); border-radius: 6px;
         background: var(--panel); color: var(--text);
-        font-size: 11.5px; font-weight: 500; cursor: pointer;
+        font-size: var(--t-small); font-weight: 500; cursor: pointer;
       }
       .chip:hover:not(:disabled) { border-color: var(--accent); }
       .gear {
         width: 32px; height: 32px; flex: none; padding: 0;
         border: 1px solid var(--line); border-radius: 8px;
         background: var(--panel); color: var(--text);
-        font-size: 17px; line-height: 1; cursor: pointer;
+        line-height: 1; cursor: pointer;
         /* Centred explicitly: a glyph's own metrics differ per character, so ⚙ sat right
            and ⇅ did not. Flex centres the box, whatever is inside it. */
         display: inline-flex; align-items: center; justify-content: center;
@@ -58,17 +85,18 @@
 
       #empty {
         margin: auto; padding: 0 24px; text-align: center;
-        color: var(--muted); font-size: 12.5px; line-height: 1.6;
+        color: var(--muted); font-size: var(--t-body); line-height: 1.6;
       }
       #messages {
-        flex: 1; overflow-y: auto; padding: 14px;
-        display: flex; flex-direction: column; gap: 10px;
+        flex: 1; overflow-y: auto; padding: var(--gap-4);
+        display: flex; flex-direction: column; gap: var(--gap-3);
       }
       .msg { display: flex; }
       .msg.user { justify-content: flex-end; }
       .bubble {
-        max-width: 86%; padding: 8px 11px; border-radius: 12px;
+        max-width: 86%; padding: var(--gap-2) var(--gap-3); border-radius: 10px;
         white-space: pre-wrap; overflow-wrap: anywhere;
+        font-size: var(--t-body); line-height: 1.55;
       }
       .msg.assistant .bubble {
         background: var(--panel); border: 1px solid var(--line); border-bottom-left-radius: 4px;
@@ -90,7 +118,7 @@
         background: transparent;
         border: 1px dashed var(--line);
         color: var(--muted);
-        font-size: 12px;
+        font-size: var(--t-body);
         font-style: italic;
       }
 
@@ -104,7 +132,7 @@
         border-radius: 6px;
         padding: 7px 10px;
         background: var(--panel);
-        font-size: 12.5px;
+        font-size: var(--t-body);
       }
       .tool.running { opacity: 0.7; }
       .tool.failed { border-left-color: var(--danger); }
@@ -115,17 +143,17 @@
         font: 11.5px ui-monospace, SFMono-Regular, Menlo, monospace;
         overflow-wrap: anywhere;
       }
-      .tool-status { color: var(--good); font-size: 12px; }
+      .tool-status { color: var(--good); font-size: var(--t-body); }
       .tool.failed .tool-status { color: var(--danger); }
       .tool.running .tool-status { color: var(--muted); }
       .tool-result {
-        margin-top: 4px; font-size: 11.5px; color: var(--muted); overflow-wrap: anywhere;
+        margin-top: 4px; font-size: var(--t-small); color: var(--muted); overflow-wrap: anywhere;
       }
       .tool-result:empty { display: none; }
       .tool.failed .tool-result { color: var(--danger); }
       .tool-raw { margin-top: 6px; }
       .tool-raw summary {
-        cursor: pointer; font-size: 10.5px; color: var(--muted); list-style: none;
+        cursor: pointer; font-size: var(--t-micro); color: var(--muted); list-style: none;
       }
       .tool-raw summary::marker { content: ""; }
       .tool-raw summary::before { content: "\25B8 "; }
@@ -142,10 +170,10 @@
       .bubble p { margin: 0 0 8px; }
       .bubble h1, .bubble h2, .bubble h3,
       .bubble h4, .bubble h5, .bubble h6 {
-        margin: 12px 0 6px; font-size: 13.5px; font-weight: 600; line-height: 1.35;
+        margin: 12px 0 6px; font-size: var(--t-lead); font-weight: 600; line-height: 1.35;
       }
-      .bubble h1 { font-size: 15px; }
-      .bubble h2 { font-size: 14px; }
+      .bubble h1 { font-size: 15px; }   /* model markdown, above the UI scale on purpose */
+      .bubble h2 { font-size: var(--t-lead); }
       .bubble ul, .bubble ol { margin: 0 0 8px; padding-left: 20px; }
       .bubble li { margin: 2px 0; }
       .bubble code {
@@ -166,9 +194,30 @@
       /* The capture, shown at panel width. A border because a screenshot of a white page
          against a dark panel otherwise looks like a hole rather than an image. */
       .bubble .capture {
-        display: block; width: 100%; margin-top: 8px;
+        display: block; width: 100%; margin-top: var(--gap-2);
         border: 1px solid var(--line); border-radius: 6px;
       }
+
+      /* ---------------------------------------------------------- scan receipt */
+      /* The result of a scan is the product's whole claim, and it was set as a log line.
+         It reads as a receipt now: what was found, what was withheld, how long it took. */
+      .receipt { display: grid; gap: var(--gap-2); }
+      .receipt-line {
+        display: flex; align-items: baseline; gap: var(--gap-2);
+        font-family: var(--data); font-size: var(--t-small); color: var(--muted);
+      }
+      .receipt-count {
+        font-family: var(--data); font-size: 18px; font-weight: 600;
+        color: var(--text); line-height: 1;
+      }
+      /* The mask motif, used once: a bar standing in for what was withheld. It is the
+         same black the screenshot is painted with, so the interface and the artifact
+         are made of one material. */
+      .receipt-bar {
+        flex: 1; height: 10px; background: var(--ink);
+        border: 1px solid var(--line); border-radius: 2px;
+      }
+      .receipt-note { font-size: var(--t-small); color: var(--muted); }
       .bubble a { color: var(--accent); }
       .msg.user .bubble a { color: #fff; text-decoration: underline; }
 
@@ -190,7 +239,7 @@
       }
       .nethead {
         display: flex; justify-content: space-between; align-items: baseline;
-        font-size: 11px; color: var(--muted); margin-bottom: 8px;
+        font-size: var(--t-small); color: var(--muted); margin-bottom: 8px;
         text-transform: uppercase; letter-spacing: 0.04em;
       }
       .nethead .hint { margin: 0; text-transform: none; letter-spacing: 0; }
@@ -198,14 +247,14 @@
         display: grid; grid-template-columns: 14px 1fr auto;
         gap: 8px; align-items: baseline;
         padding: 5px 0; border-top: 1px solid var(--line);
-        font-size: 11px; line-height: 1.5;
+        font-size: var(--t-small); line-height: 1.5;
       }
       .net:first-child { border-top: 0; }
       .net .mark { font-weight: 600; }
       .net.sent .mark { color: var(--accent); }
       .net.blocked .mark { color: #e5484d; }
-      .net .host { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--fg); }
-      .net .size { color: var(--muted); font-variant-numeric: tabular-nums; }
+      .net .host { font-family: var(--data); color: var(--text); }
+      .net .size { color: var(--muted); font-family: var(--data); font-variant-numeric: tabular-nums; }
       .net .why { grid-column: 2 / -1; color: #e5484d; }
       /* ---------------------------------------------------------- settings */
       #settings { flex: 1; overflow-y: auto; padding: 14px; display: none; }
@@ -214,7 +263,7 @@
 
       /* Scoped: an unscoped h2 rule bleeds into markdown headings in the chat. */
       #settings h2 {
-        margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.6px;
+        margin: 0 0 8px; font-size: var(--t-small); font-weight: 600; letter-spacing: 0.6px;
         text-transform: uppercase; color: var(--muted);
       }
       .group { margin-bottom: 20px; }
@@ -225,7 +274,7 @@
       .tab {
         flex: 1; padding: 8px 0; background: none; border: 0;
         border-bottom: 2px solid transparent; margin-bottom: -1px;
-        color: var(--muted); font: inherit; font-size: 12px; font-weight: 600;
+        color: var(--muted); font: inherit; font-size: var(--t-body); font-weight: 600;
         letter-spacing: 0.3px; cursor: pointer;
       }
       .tab:hover { color: var(--text); }
@@ -235,11 +284,11 @@
          element stays painted with its hidden property set to true. Restate it where it
          can win. */
       .field[hidden] { display: none; }
-      label.field { display: block; margin-bottom: 10px; font-size: 12px; color: var(--muted); }
+      label.field { display: block; margin-bottom: 10px; font-size: var(--t-body); color: var(--muted); }
       select, input[type="password"], input[type="text"] {
         width: 100%; margin-top: 4px; padding: 7px 9px;
         border: 1px solid var(--line); border-radius: 6px;
-        background: var(--panel); color: var(--text); font: inherit; font-size: 12.5px;
+        background: var(--panel); color: var(--text); font: inherit; font-size: var(--t-body);
       }
       select:focus, input:focus { outline: none; border-color: var(--accent); }
       select:disabled { opacity: 0.5; }
@@ -249,12 +298,12 @@
         padding: 10px; margin-bottom: 8px; background: var(--panel);
       }
       .provider .head { display: flex; align-items: baseline; gap: 6px; }
-      .provider .name { font-size: 12.5px; font-weight: 600; flex: 1; }
+      .provider .name { font-size: var(--t-body); font-weight: 600; flex: 1; }
       .provider .url {
         font: 10.5px ui-monospace, Menlo, monospace; color: var(--muted);
         margin-top: 2px; overflow-wrap: anywhere;
       }
-      .provider .note { font-size: 11px; color: var(--muted); margin-top: 6px; }
+      .provider .note { font-size: var(--t-small); color: var(--muted); margin-top: 6px; }
       .provider .controls { display: flex; gap: 6px; margin-top: 8px; }
       /* The field and its buttons share one height, so the row reads as a single control.
          The input's vertical padding is dropped in favour of an explicit height. */
@@ -265,14 +314,14 @@
       }
       .provider .controls input { flex: 1; min-width: 0; padding: 0 9px; }
       .badge {
-        font-size: 10px; padding: 1px 6px; border-radius: 10px;
+        font-size: var(--t-micro); padding: 1px 6px; border-radius: 10px;
         border: 1px solid var(--line); color: var(--muted); white-space: nowrap;
       }
       .badge.set { color: var(--good); border-color: var(--good); }
       .badge.none { color: var(--warn); border-color: var(--warn); }
       label.inline {
         display: flex; align-items: center; gap: 6px;
-        margin: -4px 0 10px; font-size: 11.5px; color: var(--muted);
+        margin: -4px 0 10px; font-size: var(--t-small); color: var(--muted);
       }
       label.inline input { width: auto; margin: 0; }
       #modelFilter { margin-bottom: 4px; }
@@ -280,9 +329,9 @@
         margin: -4px 0 10px; padding: 7px 9px;
         border: 1px solid var(--warn); border-radius: 6px;
         background: rgba(210, 153, 34, 0.08);
-        color: var(--warn); font-size: 11px; line-height: 1.5;
+        color: var(--warn); font-size: var(--t-small); line-height: 1.5;
       }
-      .hint { font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+      .hint { font-size: var(--t-small); color: var(--muted); margin-top: 10px; line-height: 1.5; }
 
       #composer {
         flex: none; display: flex; gap: 8px; align-items: flex-end;

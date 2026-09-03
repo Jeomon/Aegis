@@ -109,6 +109,8 @@ function appendMessage(message: Message): HTMLElement {
   bubble.className = `bubble${message.mono ? ' mono' : ''}${message.dim ? ' dim' : ''}`
   paint(bubble, message)
 
+  if (message.receipt) bubble.append(receipt(message.receipt))
+
   if (message.image) {
     const img = document.createElement('img')
     img.className = 'capture'
@@ -121,6 +123,46 @@ function appendMessage(message: Message): HTMLElement {
   messagesEl.append(row)
   messagesEl.scrollTop = messagesEl.scrollHeight
   return bubble
+}
+
+/**
+ * What a scan withheld, stated as a result rather than logged as a line.
+ *
+ * The count leads because it is the claim; the bar beside it is the same black the capture
+ * is painted with, so the interface is made of the artifact's own material rather than
+ * describing it. With nothing to withhold there is no bar — an empty one would imply a
+ * protection that did not happen.
+ */
+function receipt(data: { summary: string; masked: number }): HTMLElement {
+  const wrap = document.createElement('div')
+  wrap.className = 'receipt'
+
+  const line = document.createElement('div')
+  line.className = 'receipt-line'
+
+  if (data.masked > 0) {
+    const count = document.createElement('span')
+    count.className = 'receipt-count'
+    count.textContent = String(data.masked)
+
+    const label = document.createElement('span')
+    label.textContent = data.masked === 1 ? 'region withheld' : 'regions withheld'
+
+    const bar = document.createElement('span')
+    bar.className = 'receipt-bar'
+    line.append(count, label, bar)
+  } else {
+    const label = document.createElement('span')
+    label.textContent = 'nothing to withhold on this page'
+    line.append(label)
+  }
+
+  const note = document.createElement('div')
+  note.className = 'receipt-note'
+  note.textContent = data.summary
+
+  wrap.append(line, note)
+  return wrap
 }
 
 /**
@@ -356,12 +398,12 @@ async function showCapture(scan: ScanResult, summary: string): Promise<void> {
     return
   }
 
-  const masked = annotated.masked
-  const note = masked
-    ? `${summary} · ${masked} region${masked === 1 ? '' : 's'} redacted`
-    : `${summary} · nothing to redact on this page`
-
-  appendMessage({ role: 'assistant', text: note, image: annotated.dataUrl })
+  appendMessage({
+    role: 'assistant',
+    text: '',
+    image: annotated.dataUrl,
+    receipt: { summary, masked: annotated.masked },
+  })
 }
 
 /* ---------------------------------------------------------------- actions */
