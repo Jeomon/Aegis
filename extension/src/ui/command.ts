@@ -42,7 +42,11 @@ export function parseCommand(input: string): BrowserAction | null {
     case 'go':
     case 'goto':
     case 'open':
-      return tail ? { type: 'goto', url: tail } : null
+      // A destination is one token. "go to google and tell me the weather in kochi" is a
+      // sentence that happens to start with a command word, and treating its remainder as
+      // a URL navigated to "https://to google and tell me..." without ever asking the
+      // model. Anything with a space is prose, and belongs to the agent.
+      return tail && !/\s/.test(tail) ? { type: 'goto', url: tail } : null
 
     case 'tabs':
       return { type: 'tab', op: 'list' }
