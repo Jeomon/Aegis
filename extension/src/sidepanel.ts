@@ -190,6 +190,24 @@ function paintToolCard(card: HTMLElement, message: Message): void {
   result.textContent = tool.result
 }
 
+/**
+ * The agent is working. Not a message — it says nothing and is removed the moment there is
+ * something real to show, so it never lingers in the transcript.
+ */
+function showWorking(): HTMLElement {
+  clearEmptyState()
+  const row = document.createElement('div')
+  row.className = 'msg assistant'
+  const dots = document.createElement('div')
+  dots.className = 'working'
+  dots.setAttribute('aria-label', 'Working')
+  for (let i = 0; i < 3; i++) dots.append(document.createElement('span'))
+  row.append(dots)
+  messagesEl.append(row)
+  messagesEl.scrollTop = messagesEl.scrollHeight
+  return row
+}
+
 function say(role: Message['role'], text: string, mono = false, dim = false): void {
   if (!text.trim()) return // an empty bubble is noise, never information
   const message: Message = { role, text, mono, dim }
@@ -631,6 +649,15 @@ async function runModelTurn(text: string): Promise<void> {
   const controller = new AbortController()
   inFlight = controller
 
+  // Shown until the first thing the agent produces — a token, a tool call, or an error.
+  // The gap before a model's first token is seconds long, and an unchanged panel in that
+  // time is indistinguishable from a turn that never started.
+  let working: HTMLElement | null = showWorking()
+  const stopWorking = (): void => {
+    working?.remove()
+    working = null
+  }
+
   try {
     await runAgentTurn(
       text,
@@ -639,11 +666,13 @@ async function runModelTurn(text: string): Promise<void> {
       onStep: closeLive,
 
       onReasoning: (delta) => {
+        stopWorking()
         reasoning ??= beginLive({ dim: true })
         reasoning.append(delta)
       },
 
       onDelta: (delta) => {
+        stopWorking()
         // Prose starting means the thinking for this step is done.
         reasoning?.finish()
         prose ??= beginLive()
@@ -651,12 +680,14 @@ async function runModelTurn(text: string): Promise<void> {
       },
 
       onMessage: (message) => {
+        stopWorking()
         if (prose) prose.finish()
         else say('assistant', message)
         closeLive()
       },
 
       onToolCall: (_name, args) => {
+        stopWorking()
         closeLive()
         pendingTool = beginToolCard(args)
       },
@@ -667,6 +698,7 @@ async function runModelTurn(text: string): Promise<void> {
       },
 
       onError: (message) => {
+        stopWorking()
         closeLive()
         say('assistant', message)
       },
@@ -674,6 +706,7 @@ async function runModelTurn(text: string): Promise<void> {
       controller.signal,
     )
   } finally {
+    stopWorking()
     if (inFlight === controller) inFlight = null
     closeLive()
     busy = false
