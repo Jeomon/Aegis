@@ -281,11 +281,16 @@ function renderMode(providerId: string, modelId: string, mode: ObservationMode):
     return
   }
 
+  // Stating what is actually covered, and what is not, in that order. A warning that
+  // understates the protection invites someone to build around a gap that was closed, and
+  // one that overstates it is worse — so both halves are kept current with the cascade.
   warningEl.hidden = false
   warningEl.textContent =
-    'Fields holding personal data are painted out of the screenshot before it is sent, and ' +
-    'their values stay on this device behind handles. Text rendered into the page itself — ' +
-    'an ID printed in a paragraph, or a face in a photo — is not covered yet.'
+    'Before the screenshot is sent, fields holding personal data are painted out and their ' +
+    'values stay on this device behind handles, and identifiers printed into the page — ' +
+    'Aadhaar, PAN, GSTIN, IFSC, cards, phone numbers, email — are masked where they appear. ' +
+    'Not covered: faces, text inside images, and names or addresses written in ordinary ' +
+    'prose, which carry no pattern to match.'
 }
 
 function renderCredentials(keys: Map<string, string | undefined>): void {

@@ -201,7 +201,7 @@ extension/src/
     actions.ts  types.ts  settings.ts
 
 docs/
-  redaction-pipeline.md   the cascade design, not yet implemented
+  redaction-pipeline.md   the cascade design; layers 1 and 2 are built, layer 3 is not
 ```
 
 Model output is attacker-influenced — the agent reads untrusted pages — and runs with
