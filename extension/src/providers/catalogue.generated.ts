@@ -33,7 +33,8 @@ export const CATALOGUE: readonly ModelConfig[] = [
   { provider: "openai", id: "gpt-5.6-terra", label: "GPT-5.6 Terra", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "low", "medium", "high", "xhigh", "max"], context: 1050000 },
   { provider: "openai", id: "gpt-5.6-luna", label: "GPT-5.6 Luna", tools: true, input: ["text", "image"], output: ["text"], thinkingLevels: ["off", "low", "medium", "high", "xhigh", "max"], context: 1050000 },
 
-  // ---- anthropic (7) ------------------------------------------------
+  // ---- anthropic (8) ------------------------------------------------
+  { provider: "anthropic", id: "claude-fable-5-1", label: "Claude Fable 5.1", tools: true, input: ["text", "image", "file"], output: ["text"], thinkingLevels: ["low", "medium", "high", "xhigh", "max"], thinkingFormat: "anthropic", context: 1048576 },
   { provider: "anthropic", id: "claude-fable-5", label: "Claude Fable 5", tools: true, input: ["text", "image", "file"], output: ["text"], thinkingLevels: ["low", "medium", "high", "xhigh", "max"], thinkingFormat: "anthropic", context: 1048576 },
   { provider: "anthropic", id: "claude-opus-5", label: "Claude Opus 5", tools: true, input: ["text", "image", "file"], output: ["text"], thinkingLevels: ["off", "low", "medium", "high", "xhigh", "max"], thinkingFormat: "anthropic", context: 1048576 },
   { provider: "anthropic", id: "claude-opus-4-8", label: "Claude Opus 4.8", tools: true, input: ["text", "image", "file"], output: ["text"], thinkingLevels: ["off", "low", "medium", "high", "xhigh", "max"], thinkingFormat: "anthropic", context: 1048576 },
