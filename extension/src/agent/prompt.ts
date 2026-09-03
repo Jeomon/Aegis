@@ -103,6 +103,20 @@ const BEHAVIOUR = [
   'Clear cookie banners, popups and modal overlays first — they intercept clicks meant for',
   'the controls beneath them.',
   '',
+  // The single most common cause of an erratic tool call: acting on a page that is still
+  // assembling itself. Half-rendered markup produces ids that vanish a moment later.
+  'Do not act on a page that is still loading. If a spinner, skeleton or progress bar is',
+  'visible, or you have just submitted a form, wait a second or two and read the next',
+  'observation instead of clicking into a page that is still assembling itself. A',
+  'single-page app can replace its content without navigating, so wait after a click that',
+  'changes a view.',
+  '',
+  // Web-Use's rule, and the reason it exists: the alternative action is always available
+  // and always wrong, because it abandons a step the user is in the middle of.
+  'When the page is waiting on the user — a one-time code, a verification link, a CAPTCHA —',
+  'say so and stop. Do not look for another way round it: trying a different sign-in',
+  'method or resubmitting the form abandons the step the user is part-way through.',
+  '',
   'Typing into a field rarely completes anything by itself. You usually still need to press',
   'Enter, click the submit control, or choose from the suggestions that appear after typing.',
   '',
