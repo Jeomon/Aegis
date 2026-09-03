@@ -13,19 +13,30 @@ Built for **SIH26171** (ISRO, Software) by Team Aetheris, IIT Madras BS Degree P
 ## Status
 
 The agent loop runs end to end: the page is scanned, an observation is sent, tool calls come
-back, and actions are executed against the live tab.
+back, and actions are executed against the live tab. Verified against a live model through
+the loaded extension — a request typed into the panel reaches the page as a keystroke.
 
-**The on-device redaction cascade is not implemented.** It is specified in
-[`docs/redaction-pipeline.md`](docs/redaction-pipeline.md) and the seam for it exists in
-`agent/agent.ts`, between `captureScreenshot()` and `annotateScreenshot()`. Until it is
-built, the screenshot observation modes send unredacted pixels, and the settings panel says
-so rather than pretending otherwise.
+**Layers 1 and 2 of the redaction cascade are built, across both text and pixels. Layer 3
+is not.** The design is in [`docs/redaction-pipeline.md`](docs/redaction-pipeline.md).
 
-Layer 1 of the cascade — DOM rules — is implemented for the text channel. A field the page
-declares sensitive (`type="password"`, `autocomplete="cc-number"`, an Aadhaar label) reports
-`value=[redacted:kind]` instead of its contents, so the agent still knows the field is
-filled without being told what with. The classification lives on each element, so the pixel
-channel will mask the same decision rather than a parallel one.
+Measured against [`tests/corpus/`](tests/corpus), a page carrying eleven identifiers and
+eleven decoys:
+
+```
+RECALL      90.9%   (10/11 identifiers covered)
+PRECISION  100.0%   (0 of 11 decoys wrongly masked)
+```
+
+The single miss is a person's name in prose, which has no pattern and no declaring element.
+The decoys are the point of that second number: an order number, a timestamp, a price, an
+Aadhaar with two digits transposed, a card-shaped run failing Luhn — each is a string a
+naive detector takes, and every one survives. Run it with `node tests/score.mjs`.
+
+Layer 1 — DOM rules — classifies a field from what the page declares: `type="password"`,
+an `autocomplete` token, or the field's own label. A classified field reports
+`value=[redacted:kind#n]` instead of its contents, so the agent still knows the field is
+filled without being told what with. The classification lives on the element beside its
+bounds, so the pixel channel masks the same decision rather than making a parallel one.
 
 Layer 2 — regex with checksums — covers the text those rules cannot reach: accessible
 names, field values with no declared kind, the page title and URL, and every open tab's
@@ -67,8 +78,15 @@ would die. Handles the panel minted are expanded one step before the action reac
 page, with the kind travelling alongside so the page applies the same same-kind rule to
 them as to its own.
 
-Still unredacted: faces, and anything inside a closed shadow root. `evaluate` returns raw
-page data by choice and runs only in the top frame.
+Clicking **Scan page** shows the capture the model would receive — masked, labelled, with a
+count of what was covered. It calls the same capture and masking the agent loop calls, not a
+preview of them, so the panel cannot be reassuring about something that is not what gets
+sent.
+
+**Not covered**, and worth saying plainly: faces; text rendered inside images; names and
+addresses in ordinary prose, which carry no pattern to match; and anything in a closed
+shadow root, which no script on the page can read either. `evaluate` returns raw page data
+by deliberate choice and runs only in the top frame.
 
 ---
 
