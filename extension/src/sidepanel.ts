@@ -25,6 +25,7 @@ import { mountSettings } from './ui/settings-panel'
 import type { Message, PageContext, ScanResult } from './shared/types'
 import { installEgressGuard } from './observe/redact/egress'
 import { mountNetworkPanel } from './ui/network-panel'
+import { annotateScreenshot } from './observe/annotate'
 
 // Installed before anything can issue a request: the SDKs call fetch, so wrapping it is
 // the one place every provider path must pass through.
@@ -106,6 +107,14 @@ function appendMessage(message: Message): HTMLElement {
   const bubble = document.createElement('div')
   bubble.className = `bubble${message.mono ? ' mono' : ''}${message.dim ? ' dim' : ''}`
   paint(bubble, message)
+
+  if (message.image) {
+    const img = document.createElement('img')
+    img.className = 'capture'
+    img.src = message.image
+    img.alt = 'The page as the model receives it, with personal data painted out'
+    bubble.append(img)
+  }
 
   row.append(bubble)
   messagesEl.append(row)
@@ -293,13 +302,45 @@ async function runScan(quiet = false): Promise<void> {
     // never appears in the chat — `obs` still prints it on demand for debugging.
     if (!quiet) {
       const { counts } = scan
-      say('assistant', `${counts.final} interactive elements · ${scan.scanMs} ms`)
+      await showCapture(scan, `${counts.final} interactive elements · ${scan.scanMs} ms`)
     }
   } catch (err: unknown) {
     say('assistant', err instanceof Error ? err.message : String(err))
   } finally {
     scanEl.disabled = false
   }
+}
+
+/**
+ * Show the page exactly as the model would receive it.
+ *
+ * Scanning is the one moment a user can check the claim rather than take it, so this runs
+ * the same capture and the same masking the agent loop runs — not a preview of it. If the
+ * two ever diverge, the panel is reassuring about something that is not happening.
+ *
+ * The image is not added to history: it is a screenshot of a moment, and a stale one would
+ * mislead exactly where accuracy matters.
+ */
+async function showCapture(scan: ScanResult, summary: string): Promise<void> {
+  let annotated
+  try {
+    annotated = await annotateScreenshot(await captureScreenshot(), scan.elements, {
+      devicePixelRatio: scan.viewport.devicePixelRatio,
+      viewportWidth: scan.viewport.width,
+      piiRegions: scan.piiRegions,
+    })
+  } catch {
+    // A page the browser refuses to capture — chrome:// and the store — still has a tree.
+    say('assistant', `${summary} · no capture available on this page`)
+    return
+  }
+
+  const masked = annotated.masked
+  const note = masked
+    ? `${summary} · ${masked} region${masked === 1 ? '' : 's'} redacted before sending`
+    : `${summary} · nothing to redact on this page`
+
+  appendMessage({ role: 'assistant', text: note, image: annotated.dataUrl })
 }
 
 /* ---------------------------------------------------------------- actions */

@@ -31,6 +31,12 @@ export interface Message {
   /** Dimmed and italic — used for the model's reasoning trace. */
   dim?: boolean
   /**
+   * A capture to show inline, already redacted and labelled. Carried as a data URL because
+   * that is what crosses to the model — showing anything else here would let the panel and
+   * the request disagree about what was sent.
+   */
+  image?: string
+  /**
    * A tool the agent invoked. Rendered as an activity card rather than a chat bubble —
    * it is something that happened, not something anyone said.
    */

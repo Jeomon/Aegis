@@ -163,6 +163,12 @@
         border-left: 2px solid var(--line); color: var(--muted);
       }
       .bubble hr { border: 0; border-top: 1px solid var(--line); margin: 10px 0; }
+      /* The capture, shown at panel width. A border because a screenshot of a white page
+         against a dark panel otherwise looks like a hole rather than an image. */
+      .bubble .capture {
+        display: block; width: 100%; margin-top: 8px;
+        border: 1px solid var(--line); border-radius: 6px;
+      }
       .bubble a { color: var(--accent); }
       .msg.user .bubble a { color: #fff; text-decoration: underline; }
 
